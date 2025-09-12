@@ -813,7 +813,6 @@
   </style>
 </head>
 <body>
-  <!-- The rest of your HTML code remains exactly the same -->
   <header class="app-header">
     <div class="container">
       <h1><i class="fas fa-truck-moving"></i> Gestion des Flottes - Poste Guinéenne</h1>
@@ -928,7 +927,7 @@
                 <label for="carburant_type">Type de carburant</label>
                 <select id="carburant_type" required>
                   <option value="gasoil">Gasoil</option>
-                  <option value="essence">Essence</option>
+                  <option value="essense">Essence</option>
                   <option value="gnc">GNC</option>
                   <option value="autre">Autre</option>
                 </select>
@@ -1311,6 +1310,9 @@
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script>
+    // URL de l'API Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbwfSt8IuPDYJUPBe8U215NwDdsJzigPsQF_6QIgVuZZRws24Ypmjq6yQnX87wrQffnQ/exec";
+
     // Theme Switching
     document.getElementById('toggle-theme').addEventListener('click', function() {
       const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -1376,6 +1378,9 @@
       renderVehiclesList();
       resetVehicleForm();
       showToast('Véhicule enregistré avec succès', 'success');
+      
+      // Enregistrer dans Google Sheets
+      saveToGoogleSheets('vehicles', vehicleData);
     });
 
     function resetVehicleForm() {
@@ -1405,6 +1410,9 @@
       this.reset();
       renderHistory();
       showToast('Ravitaillement enregistré avec succès', 'success');
+      
+      // Enregistrer dans Google Sheets
+      saveToGoogleSheets('fuel', fuelData);
     });
 
     // Vehicle Maintenance Form
@@ -1427,6 +1435,9 @@
       this.reset();
       renderHistory();
       showToast('Maintenance enregistrée avec succès', 'success');
+      
+      // Enregistrer dans Google Sheets
+      saveToGoogleSheets('vehicle_maintenance', maintenanceData);
     });
 
     // Bike Form Handling
@@ -1460,6 +1471,9 @@
       renderBikesList();
       resetBikeForm();
       showToast('Moto enregistrée avec succès', 'success');
+      
+      // Enregistrer dans Google Sheets
+      saveToGoogleSheets('bikes', bikeData);
     });
 
     function resetBikeForm() {
@@ -1489,6 +1503,9 @@
       this.reset();
       renderBikeHistory();
       showToast('Maintenance enregistrée avec succès', 'success');
+      
+      // Enregistrer dans Google Sheets
+      saveToGoogleSheets('bike_maintenance', maintenanceData);
     });
 
     // Bike Fuel Form Handling
@@ -1510,6 +1527,9 @@
       this.reset();
       renderBikeHistory();
       showToast('Ravitaillement enregistré avec succès', 'success');
+      
+      // Enregistrer dans Google Sheets
+      saveToGoogleSheets('bike_fuel', fuelData);
     });
 
     // Save Functions
@@ -1535,6 +1555,70 @@
     
     function saveBikeFuelRecords() {
       localStorage.setItem('fleet_bike_fuel', JSON.stringify(bikeFuelRecords));
+    }
+
+    // Function to save data to Google Sheets
+    function saveToGoogleSheets(dataType, data) {
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          type: dataType,
+          data: data,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .then(response => response.text())
+      .then(result => {
+        console.log('Data saved to Google Sheets:', result);
+      })
+      .catch(error => {
+        console.error('Error saving to Google Sheets:', error);
+        showToast('Erreur de synchronisation avec Google Sheets', 'error');
+      });
+    }
+
+    // Function to load data from Google Sheets
+    function loadFromGoogleSheets() {
+      fetch(API_URL)
+        .then(response => response.json())
+        .then(data => {
+          // Traiter les données reçues de Google Sheets
+          if (data.vehicles) {
+            vehicles = data.vehicles;
+            saveVehicles();
+          }
+          if (data.bikes) {
+            bikes = data.bikes;
+            saveBikes();
+          }
+          if (data.fuelRecords) {
+            fuelRecords = data.fuelRecords;
+            saveFuelRecords();
+          }
+          if (data.vehicleMaintenance) {
+            vehicleMaintenance = data.vehicleMaintenance;
+            saveVehicleMaintenance();
+          }
+          if (data.bikeMaintenance) {
+            bikeMaintenance = data.bikeMaintenance;
+            saveBikeMaintenance();
+          }
+          if (data.bikeFuelRecords) {
+            bikeFuelRecords = data.bikeFuelRecords;
+            saveBikeFuelRecords();
+          }
+          
+          // Mettre à jour l'interface
+          renderVehiclesList();
+          renderBikesList();
+          renderHistory();
+          renderBikeHistory();
+          showToast('Données synchronisées depuis Google Sheets', 'success');
+        })
+        .catch(error => {
+          console.error('Error loading from Google Sheets:', error);
+          showToast('Erreur de chargement depuis Google Sheets', 'error');
+        });
     }
 
     // Rendering Functions
@@ -1744,7 +1828,7 @@
 
     function formatDate(dateString) {
       const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-      return new Date(dateString).toLocaleDate('fr-FR', options);
+      return new Date(dateString).toLocaleDateString('fr-FR', options);
     }
     
     function formatCurrency(amount) {
@@ -1913,15 +1997,18 @@
 
     function deleteVehicle(id) {
       if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est irréversible.')) {
-        vehicles = vehicles.filter(v => v.id !== id);
-        fuelRecords = fuelRecords.filter(f => f.vehicle_id !== id);
-        vehicleMaintenance = vehicleMaintenance.filter(m => m.vehicle_id !== id);
+        vehicles = vehicles.filter(v => v.id === id);
+        fuelRecords = fuelRecords.filter(f => f.vehicle_id === id);
+        vehicleMaintenance = vehicleMaintenance.filter(m => m.vehicle_id === id);
         saveVehicles();
         saveFuelRecords();
         saveVehicleMaintenance();
         renderVehiclesList();
         renderHistory();
         showToast('Véhicule supprimé avec succès', 'success');
+        
+        // Supprimer de Google Sheets
+        deleteFromGoogleSheets('vehicle', id);
       }
     }
 
@@ -2026,16 +2113,38 @@
 
     function deleteBike(id) {
       if (confirm('Êtes-vous sûr de vouloir supprimer cette moto ? Cette action est irréversible.')) {
-        bikes = bikes.filter(b => b.id !== id);
-        bikeMaintenance = bikeMaintenance.filter(m => m.bike_id !== id);
-        bikeFuelRecords = bikeFuelRecords.filter(f => f.bike_id !== id);
+        bikes = bikes.filter(b => b.id === id);
+        bikeMaintenance = bikeMaintenance.filter(m => m.bike_id === id);
+        bikeFuelRecords = bikeFuelRecords.filter(f => f.bike_id === id);
         saveBikes();
         saveBikeMaintenance();
         saveBikeFuelRecords();
         renderBikesList();
         renderBikeHistory();
         showToast('Moto supprimée avec succès', 'success');
+        
+        // Supprimer de Google Sheets
+        deleteFromGoogleSheets('bike', id);
       }
+    }
+
+    // Function to delete data from Google Sheets
+    function deleteFromGoogleSheets(dataType, id) {
+      fetch(API_URL, {
+        method: "DELETE",
+        body: JSON.stringify({
+          type: dataType,
+          id: id
+        })
+      })
+      .then(response => response.text())
+      .then(result => {
+        console.log('Data deleted from Google Sheets:', result);
+      })
+      .catch(error => {
+        console.error('Error deleting from Google Sheets:', error);
+        showToast('Erreur de suppression depuis Google Sheets', 'error');
+      });
     }
 
     // Modal Handling
@@ -2208,6 +2317,9 @@
       populateVehicleDropdown();
       populateBikeDropdown();
       populateVehicleMaintenanceDropdown();
+      
+      // Charger les données depuis Google Sheets au démarrage
+      loadFromGoogleSheets();
     }
 
     // Initialize when DOM is loaded
