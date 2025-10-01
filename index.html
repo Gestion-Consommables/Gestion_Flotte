@@ -72,7 +72,7 @@
       align-items: center;
     }
     
-    /* Nouveaux styles pour le logo */
+    /* Logo Image Styles */
     .header-logo-container {
       display: flex;
       align-items: center;
@@ -80,35 +80,18 @@
     }
     
     .header-logo {
-      height: 50px;
       display: flex;
       align-items: center;
       background-color: #1a3a6d;
-      padding: 0 15px;
+      padding: 5px 15px;
       border-radius: 4px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
-    .logo-text {
-      text-align: center;
-      line-height: 1.2;
-      font-weight: bold;
-      color: white;
-    }
-    
-    .logo-main {
-      font-size: 18px;
-      text-transform: uppercase;
-    }
-    
-    .logo-sub {
-      font-size: 14px;
-    }
-    
-    .logo-slogan {
-      font-size: 10px;
-      color: #f9c642;
-      margin-top: 2px;
+    .logo-image {
+      height: 50px;
+      width: auto;
+      object-fit: contain;
     }
 
     .app-header h1 {
@@ -669,20 +652,11 @@
       }
       
       .header-logo {
+        padding: 5px 10px;
+      }
+      
+      .logo-image {
         height: 40px;
-        padding: 0 10px;
-      }
-      
-      .logo-main {
-        font-size: 16px;
-      }
-      
-      .logo-sub {
-        font-size: 12px;
-      }
-      
-      .logo-slogan {
-        font-size: 9px;
       }
     }
   </style>
@@ -693,11 +667,7 @@
       <div class="header-logo-container">
         <div class="header-logo">
           <!-- Logo La Poste Guinéenne -->
-          <div class="logo-text">
-            <div class="logo-main">LA POSTE</div>
-            <div class="logo-sub">GUINÉENNE</div>
-            <div class="logo-slogan">Confiance - Innovation - Proximité</div>
-          </div>
+          <img src="Capture d'écran 2025-09-17 111708.png" alt="La Poste Guinéenne" class="logo-image">
         </div>
         <h1><i class="fas fa-truck-moving"></i> Gestion des Flottes</h1>
       </div>
