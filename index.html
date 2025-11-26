@@ -6,7 +6,6 @@
   <title>Gestion des Flottes - Poste Guinéenne</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Base Styles & Variables */
     :root {
       --primary-color: #3498db;
       --secondary-color: #2ecc71;
@@ -56,8 +55,6 @@
       margin: 0 auto;
       padding: 0 20px;
     }
-
-    /* Header Styles */
     .app-header {
       background-color: var(--dark-color);
       color: white;
@@ -71,8 +68,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    
-    /* Logo Image Styles */
+  
     .header-logo-container {
       display: flex;
       align-items: center;
@@ -80,18 +76,35 @@
     }
     
     .header-logo {
+      height: 50px;
       display: flex;
       align-items: center;
       background-color: #1a3a6d;
-      padding: 5px 15px;
+      padding: 0 15px;
       border-radius: 4px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
-    .logo-image {
-      height: 50px;
-      width: auto;
-      object-fit: contain;
+    .logo-text {
+      text-align: center;
+      line-height: 1.2;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .logo-main {
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+    
+    .logo-sub {
+      font-size: 14px;
+    }
+    
+    .logo-slogan {
+      font-size: 10px;
+      color: #f9c642;
+      margin-top: 2px;
     }
 
     .app-header h1 {
@@ -107,7 +120,7 @@
       gap: 15px;
     }
 
-    /* Tab Navigation */
+  
     .nav-tabs {
       display: flex;
       gap: 5px;
@@ -136,7 +149,7 @@
       background-color: rgba(255, 255, 255, 0.1);
     }
 
-    /* Tab Content */
+    
     .tab-content {
       display: none;
     }
@@ -145,7 +158,7 @@
       display: block;
     }
 
-    /* Grid Layout */
+    
     .grid-layout {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -153,7 +166,7 @@
       margin-bottom: 2rem;
     }
 
-    /* Card Styles */
+    
     .card {
       background: white;
       border-radius: 8px;
@@ -186,7 +199,7 @@
       padding: 1rem;
     }
 
-    /* Form Styles */
+    
     .form-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -260,7 +273,7 @@
       color: var(--text-light);
     }
 
-    /* Button Styles */
+    
     .btn {
       display: inline-flex;
       align-items: center;
@@ -308,7 +321,7 @@
       font-size: 0.8rem;
     }
 
-    /* Table Styles */
+    
     .table-responsive {
       overflow-x: auto;
     }
@@ -365,7 +378,7 @@
       cursor: not-allowed;
     }
 
-    /* Timeline Styles */
+    
     .timeline {
       position: relative;
       padding-left: 30px;
@@ -410,7 +423,7 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
-    /* Modal Styles */
+    
     .modal {
       display: none;
       position: fixed;
@@ -470,7 +483,7 @@
       color: white;
     }
 
-    /* Toast Styles */
+    
     .toast {
       position: fixed;
       bottom: 20px;
@@ -491,7 +504,7 @@
       opacity: 1;
     }
 
-    /* Bike Specific Styles */
+    
     .bike-status {
       display: inline-block;
       padding: 4px 8px;
@@ -530,7 +543,7 @@
       color: #fff3cd;
     }
 
-    /* Vehicle/Bike Details in Modal */
+    
     .detail-item {
       margin-bottom: 15px;
     }
@@ -587,7 +600,46 @@
       font-size: 0.9rem;
     }
 
-    /* Utility Classes */
+    
+    .localisation-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .localisation-status.fixe {
+      background-color: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .localisation-status.mobile {
+      background-color: #e8f5e8;
+      color: #2e7d32;
+    }
+
+    .localisation-status.autre-site {
+      background-color: #fff3e0;
+      color: #ef6c00;
+    }
+
+    [data-theme="dark"] .localisation-status.fixe {
+      background-color: #0d47a1;
+      color: #e3f2fd;
+    }
+
+    [data-theme="dark"] .localisation-status.mobile {
+      background-color: #1b5e20;
+      color: #e8f5e8;
+    }
+
+    [data-theme="dark"] .localisation-status.autre-site {
+      background-color: #e65100;
+      color: #fff3e0;
+    }
+
+  
     .mb-3 { margin-bottom: 1rem; }
     .mt-3 { margin-top: 1rem; }
     .text-center { text-align: center; }
@@ -595,7 +647,7 @@
     .align-center { align-items: center; }
     .justify-between { justify-content: space-between; }
 
-    /* Responsive Adjustments */
+  
     @media (max-width: 768px) {
       .app-header .container {
         flex-direction: column;
@@ -652,11 +704,20 @@
       }
       
       .header-logo {
-        padding: 5px 10px;
+        height: 40px;
+        padding: 0 10px;
       }
       
-      .logo-image {
-        height: 40px;
+      .logo-main {
+        font-size: 16px;
+      }
+      
+      .logo-sub {
+        font-size: 12px;
+      }
+      
+      .logo-slogan {
+        font-size: 9px;
       }
     }
   </style>
@@ -666,8 +727,12 @@
     <div class="container">
       <div class="header-logo-container">
         <div class="header-logo">
-          <!-- Logo La Poste Guinéenne -->
-          <img src="Capture d'écran 2025-09-17 142216.png" alt="La Poste Guinéenne" class="logo-image">
+          
+          <div class="logo-text">
+            <div class="logo-main">LA POSTE</div>
+            <div class="logo-sub">GUINÉENNE</div>
+            <div class="logo-slogan">Confiance - Innovation - Proximité</div>
+          </div>
         </div>
         <h1><i class="fas fa-truck-moving"></i> Gestion des Flottes</h1>
       </div>
@@ -684,10 +749,10 @@
   </header>
 
   <main class="container">
-    <!-- Vehicles Tab Content -->
+    
     <div id="vehicles-tab" class="tab-content active">
       <div class="grid-layout">
-        <!-- Vehicle Form Section -->
+        
         <section id="form-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-car"></i> Ajouter/Modifier un Véhicule</h2>
@@ -712,11 +777,14 @@
                   <option value="voiture">Voiture</option>
                   <option value="camion">Camion</option>
                   <option value="bus">Bus</option>
+                  <option value="pick-up">Pick-up</option>
+                  <option value="van">Van</option>
+                  <option value="fourgonette">Fourgonette</option>
                   <option value="autre">Autre</option>
                 </select>
               </div>
               
-              <!-- Champ de date modifié pour accepter le format JJ MM AAAA -->
+              
               <div class="form-group">
                 <label for="date_circulation">Date de mise en circulation</label>
                 <input type="text" id="date_circulation" placeholder="JJ MM AAAA" required />
@@ -732,10 +800,20 @@
                   <option value="hors service">Hors service</option>
                 </select>
               </div>
+
               
               <div class="form-group">
-                <label for="chauffeur">Chauffeur assigné</label>
-                <input type="text" id="chauffeur" placeholder="Nom et prénom du chauffeur" />
+                <label for="localisation">Localisation</label>
+                <select id="localisation" required>
+                  <option value="en_circulation">En circulation</option>
+                  <option value="garage">Garage</option>
+                  <option value="au_bureau">Au Bureau</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="chauffeur">Facteur assigné</label>
+                <input type="text" id="chauffeur" placeholder="Nom et prénom du facteur" />
               </div>
               
               <div class="form-group full-width">
@@ -743,19 +821,19 @@
                 <textarea id="observations" placeholder="Notes sur l'état du véhicule"></textarea>
               </div>
               
-              <!-- Section Gestion des Déplacements -->
+              
               <div class="form-group">
                 <label for="departement">Département Utilisateur</label>
                 <select id="departement" required>
                   <option value="">Sélectionner...</option>
                   <option value="DG">Direction Générale (DG)</option>
                   <option value="DGA">Direction Générale Adjointe (DGA)</option>
-                  <option value="DSI">Direction des Systèmes d'Information (DSI)</option>
+                  <option value="DSI">Département des Systèmes d'Information (DSI)</option>
                   <option value="DSP">Direction des Services Postaux (DSP)</option>
                   <option value="DRH">Direction des Ressources Humaines (DRH)</option>
-                  <option value="DPLMG">Direction de la Logistique et Moyens Généraux (DPLMG)</option>
-                  <option value="DSPS">Direction de la Sécurité et Protection Sociale (DSPS)</option>
-                  <option value="DACQ">Direction des Achats (DACQ)</option>
+                  <option value="DPLMG">Direction du Patrimoine de la Logistique et Moyens Généraux (DPLMG)</option>
+                  <option value="DSPS">Direction des Prospectives et Strategie des Projets(DPSP))</option>
+                  <option value="DACQ">Direction d'Audit et Control Qualité (DACQ)</option>
                   <option value="DSJ">Direction des Services Juridiques (DSJ)</option>
                   <option value="DAF">Direction des Affaires Financières (DAF)</option>
                 </select>
@@ -772,17 +850,17 @@
               </div>
 
               <div class="form-group">
-                <label for="km_avant">Kilométrage Avant Déplacement</label>
+                <label for="km_avant">Kilométrage Départ</label>
                 <input type="number" id="km_avant" placeholder="Kilométrage au départ" />
               </div>
 
               <div class="form-group">
-                <label for="km_apres">Kilométrage Après Déplacement</label>
+                <label for="km_apres">Kilométrage Arrivée</label>
                 <input type="number" id="km_apres" placeholder="Kilométrage à l'arrivée" />
               </div>
 
               <div class="form-group">
-                <label for="km_parcouru">Kilométrage Parcouru (calculé automatiquement)</label>
+                <label for="km_parcouru">kilometrage parcouru</label>
                 <input type="number" id="km_parcouru" placeholder="Calcul automatique" readonly />
               </div>
               
@@ -794,7 +872,7 @@
           </div>
         </section>
 
-        <!-- Fuel Section MODIFIÉE -->
+        
         <section id="carburant-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-gas-pump"></i> Ravitaillement en carburant</h2>
@@ -834,7 +912,7 @@
                 <input type="number" step="0.1" id="carburant_litres" placeholder="Ex: 45.5" required />
               </div>
               
-              <!-- NOUVEAU CHAMP MODIFIÉ : Consommation manuelle -->
+              
               <div class="form-group">
                 <label for="carburant_consommation_100km">Consommation sur 100 Km</label>
                 <input type="number" step="0.1" id="carburant_consommation_100km" placeholder="Saisir la consommation" />
@@ -867,7 +945,7 @@
           </div>
         </section>
 
-        <!-- Vehicle Maintenance Section -->
+        
         <section id="vehicle-maintenance-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-tools"></i> Maintenance des Véhicules</h2>
@@ -919,7 +997,7 @@
           </div>
         </section>
 
-        <!-- Vehicles List -->
+      
         <section id="vehicules-list" class="card">
           <div class="card-header">
             <h2><i class="fas fa-list"></i> Liste des Véhicules</h2>
@@ -937,11 +1015,12 @@
                     <th>Marque/Modèle</th>
                     <th>Type</th>
                     <th>Statut</th>
+                    <th>Localisation</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="liste-vehicules">
-                  <!-- Données dynamiques -->
+                  
                 </tbody>
               </table>
             </div>
@@ -956,7 +1035,7 @@
           </div>
         </section>
 
-        <!-- History Section -->
+        
         <section id="historique-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-history"></i> Historique des Actions</h2>
@@ -971,17 +1050,17 @@
           </div>
           <div class="card-body">
             <div class="timeline" id="historique">
-              <!-- Historique dynamique -->
+              
             </div>
           </div>
         </section>
       </div>
     </div>
 
-    <!-- Bikes Tab Content -->
+    
     <div id="bikes-tab" class="tab-content">
       <div class="grid-layout">
-        <!-- Bike Form Section -->
+        
         <section id="bike-form-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-bicycle"></i> Ajouter/Modifier une Moto</h2>
@@ -1011,7 +1090,7 @@
                 </select>
               </div>
               
-              <!-- Champ de date modifié pour accepter le format JJ MM AAAA -->
+              
               <div class="form-group">
                 <label for="bike_date_circulation">Date de mise en circulation</label>
                 <input type="text" id="bike_date_circulation" placeholder="JJ MM AAAA" required />
@@ -1027,10 +1106,20 @@
                   <option value="hors service">Hors service</option>
                 </select>
               </div>
+
               
               <div class="form-group">
-                <label for="bike_chauffeur">Livreur assigné</label>
-                <input type="text" id="bike_chauffeur" placeholder="Nom et prénom du livreur" />
+                <label for="bike_localisation">Localisation</label>
+                <select id="bike_localisation" required>
+                  <option value="en_circulation">En Circulation</option>
+                  <option value="garage">Garage</option>
+                  <option value="au_bureau">Au Bureau</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="bike_chauffeur">Facteur assigné</label>
+                <input type="text" id="bike_chauffeur" placeholder="Nom et prénom du facteur" />
               </div>
               
               <div class="form-group full-width">
@@ -1046,7 +1135,7 @@
           </div>
         </section>
 
-        <!-- Bike Fuel Section MODIFIÉE -->
+      
         <section id="bike-carburant-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-gas-pump"></i> Ravitaillement en carburant (Motos)</h2>
@@ -1086,7 +1175,7 @@
                 <input type="number" step="0.1" id="bike_carburant_litres" placeholder="Ex: 10.5" required />
               </div>
               
-              <!-- NOUVEAU CHAMP MODIFIÉ : Consommation manuelle -->
+          
               <div class="form-group">
                 <label for="bike_carburant_consommation_100km">Consommation sur 100 Km</label>
                 <input type="number" step="0.1" id="bike_carburant_consommation_100km" placeholder="Saisir la consommation" />
@@ -1118,7 +1207,7 @@
           </div>
         </section>
 
-        <!-- Bike Maintenance Section -->
+        
         <section id="bike-maintenance-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-tools"></i> Maintenance des Motos</h2>
@@ -1169,7 +1258,7 @@
           </div>
         </section>
 
-        <!-- Bikes List -->
+      
         <section id="bikes-list" class="card">
           <div class="card-header">
             <h2><i class="fas fa-list"></i> Liste des Motos</h2>
@@ -1187,11 +1276,12 @@
                     <th>Marque/Modèle</th>
                     <th>Type</th>
                     <th>Statut</th>
+                    <th>Localisation</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="liste-bikes">
-                  <!-- Données dynamiques -->
+                
                 </tbody>
               </table>
             </div>
@@ -1206,7 +1296,7 @@
           </div>
         </section>
 
-        <!-- Bike History Section -->
+    
         <section id="bike-history-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-history"></i> Historique des Motos</h2>
@@ -1221,17 +1311,17 @@
           </div>
           <div class="card-body">
             <div class="timeline" id="bike-history">
-              <!-- Historique dynamique -->
+            
             </div>
           </div>
         </section>
       </div>
     </div>
 
-    <!-- Generators Tab Content -->
+
     <div id="generators-tab" class="tab-content">
       <div class="grid-layout">
-        <!-- Generator Form Section -->
+        
         <section id="generator-form-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-bolt"></i> Ajouter/Modifier un Groupe Électrogène</h2>
@@ -1280,6 +1370,16 @@
                   <option value="hors service">Hors service</option>
                 </select>
               </div>
+
+              
+              <div class="form-group">
+                <label for="generator_localisation">Localisation</label>
+                <select id="generator_localisation" required>
+                  <option value="fixe">Fixe</option>
+                  <option value="mobile">Mobile</option>
+                  <option value="autre-site">Affecté à un autre site temporaire</option>
+                </select>
+              </div>
               
               <div class="form-group full-width">
                 <label for="generator_observations">Observations</label>
@@ -1294,7 +1394,7 @@
           </div>
         </section>
 
-        <!-- Generator Fuel Section MODIFIÉ - Champs manuels -->
+  
         <section id="generator-carburant-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-gas-pump"></i> Ravitaillement Groupes Électrogènes</h2>
@@ -1320,25 +1420,24 @@
               </div>
               
               <div class="form-group">
-                <label for="generator_carburant_heure_allumage">Heure d'allumage</label>
-                <input type="time" id="generator_carburant_heure_allumage" required />
+                <label for="generator_carburant_heure_marche">Heure de marche</label>
+                <input type="time" id="generator_carburant_heure_marche" required />
               </div>
               
               <div class="form-group">
-                <label for="generator_carburant_heure_extinction">Heure d'extinction</label>
-                <input type="time" id="generator_carburant_heure_extinction" required />
+                <label for="generator_carburant_heure_arret">Heure d'arrêt</label>
+                <input type="time" id="generator_carburant_heure_arret" required />
               </div>
               
-              <!-- MODIFIÉ : Temps de fonctionnement (manuel) -->
+              <!-- Champ temps de fonctionnement maintenant automatique et en lecture seule -->
               <div class="form-group">
-                <label for="generator_carburant_temps_fonctionnement">Temps de fonctionnement (manuel)</label>
-                <input type="text" id="generator_carburant_temps_fonctionnement" placeholder="Ex: 08:30" required />
-                <small style="color: var(--text-light); font-size: 0.8rem;">Format: HH:MM (ex: 08:30 pour 8h30)</small>
+                <label for="generator_carburant_temps_fonctionnement">Temps de fonctionnement</label>
+                <input type="text" id="generator_carburant_temps_fonctionnement" placeholder="Calcul automatique" readonly />
+                <small style="color: var(--text-light); font-size: 0.8rem;">Calculé automatiquement</small>
               </div>
               
-              <!-- MODIFIÉ : Quantité consommée par heure (manuel) -->
               <div class="form-group">
-                <label for="generator_carburant_quantite_consommee_heure">Quantité consommée par heure (L/h) (manuel)</label>
+                <label for="generator_carburant_quantite_consommee_heure">Quantité consommée par heure (L/h)</label>
                 <input type="number" step="0.1" id="generator_carburant_quantite_consommee_heure" placeholder="Ex: 12.5" required />
               </div>
               
@@ -1359,7 +1458,7 @@
           </div>
         </section>
 
-        <!-- NOUVELLE SECTION : Maintenance des Groupes Électrogènes -->
+
         <section id="generator-maintenance-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-tools"></i> Maintenance des Groupes Électrogènes</h2>
@@ -1411,7 +1510,7 @@
           </div>
         </section>
 
-        <!-- Generators List -->
+      
         <section id="generators-list" class="card">
           <div class="card-header">
             <h2><i class="fas fa-list"></i> Liste des Groupes Électrogènes</h2>
@@ -1430,11 +1529,12 @@
                     <th>Puissance</th>
                     <th>Type</th>
                     <th>Statut</th>
+                    <th>Localisation</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="liste-generators">
-                  <!-- Données dynamiques -->
+                
                 </tbody>
               </table>
             </div>
@@ -1449,7 +1549,7 @@
           </div>
         </section>
 
-        <!-- Generator History Section -->
+        
         <section id="generator-history-section" class="card">
           <div class="card-header">
             <h2><i class="fas fa-history"></i> Historique des Groupes Électrogènes</h2>
@@ -1464,7 +1564,7 @@
           </div>
           <div class="card-body">
             <div class="timeline" id="generator-history">
-              <!-- Historique dynamique -->
+            
             </div>
           </div>
         </section>
@@ -1472,7 +1572,6 @@
     </div>
   </main>
 
-  <!-- Modals -->
   <div id="vehicle-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -1515,12 +1614,12 @@
     </div>
   </div>
 
-  <!-- Toast notifications -->
+  
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script>
-    // Theme Switching
+    
     document.getElementById('toggle-theme').addEventListener('click', function() {
       const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? '' : 'dark';
@@ -1529,12 +1628,12 @@
       localStorage.setItem('fleet_theme', newTheme);
     });
 
-    // Initialize theme from localStorage
+    
     const savedTheme = localStorage.getItem('fleet_theme') || '';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('toggle-theme').innerHTML = savedTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 
-    // Tab Switching
+    
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -1546,7 +1645,7 @@
       });
     });
 
-    // Data Management
+    
     let vehicles = JSON.parse(localStorage.getItem('fleet_vehicles')) || [];
     let fuelRecords = JSON.parse(localStorage.getItem('fleet_fuel')) || [];
     let bikes = JSON.parse(localStorage.getItem('fleet_bikes')) || [];
@@ -1629,6 +1728,7 @@
         type: document.getElementById('type').value,
         date_circulation: dateCirculation,
         statut: document.getElementById('statut').value,
+        localisation: document.getElementById('localisation').value,
         chauffeur: document.getElementById('chauffeur').value,
         observations: document.getElementById('observations').value,
         departement: document.getElementById('departement').value,
@@ -1739,6 +1839,7 @@
         type: document.getElementById('bike_type').value,
         date_circulation: dateCirculation,
         statut: document.getElementById('bike_statut').value,
+        localisation: document.getElementById('bike_localisation').value,
         chauffeur: document.getElementById('bike_chauffeur').value,
         observations: document.getElementById('bike_observations').value,
         last_updated: new Date().toISOString()
@@ -1844,6 +1945,7 @@
         puissance: document.getElementById('generator_puissance').value,
         date_mise_service: dateMiseService,
         statut: document.getElementById('generator_statut').value,
+        localisation: document.getElementById('generator_localisation').value,
         observations: document.getElementById('generator_observations').value,
         last_updated: new Date().toISOString()
       };
@@ -1872,7 +1974,7 @@
     document.getElementById('clear-generator-form').addEventListener('click', resetGeneratorForm);
     document.getElementById('cancel-generator-edit').addEventListener('click', resetGeneratorForm);
 
-    // Generator Fuel Form Handling with manual fields MODIFIÉ
+    // Generator Fuel Form Handling avec calcul automatique du temps de fonctionnement
     document.getElementById('generator-carburant-form').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -1880,13 +1982,13 @@
       const fuelDate = convertToStandardDate(document.getElementById('generator_carburant_date').value);
       
       const quantiteRavitailler = parseFloat(document.getElementById('generator_carburant_quantite_ravitailler').value);
-      const heureAllumage = document.getElementById('generator_carburant_heure_allumage').value;
-      const heureExtinction = document.getElementById('generator_carburant_heure_extinction').value;
+      const heureMarche = document.getElementById('generator_carburant_heure_marche').value;
+      const heureArret = document.getElementById('generator_carburant_heure_arret').value;
       
-      // MODIFIÉ : Récupérer les valeurs manuelles
-      const tempsFonctionnement = document.getElementById('generator_carburant_temps_fonctionnement').value;
+      // Calcul automatique du temps de fonctionnement
+      const tempsFonctionnement = calculateTempsFonctionnement(heureMarche, heureArret);
+      
       const quantiteConsommeeHeure = parseFloat(document.getElementById('generator_carburant_quantite_consommee_heure').value);
-      
       const prixUnitaire = parseFloat(document.getElementById('generator_carburant_prix_unitaire').value);
       const coutTotal = quantiteRavitailler * prixUnitaire;
       
@@ -1895,8 +1997,8 @@
         generator_id: document.getElementById('generator_carburant_groupe').value,
         date: fuelDate,
         quantite_ravitailler: quantiteRavitailler,
-        heure_allumage: heureAllumage,
-        heure_extinction: heureExtinction,
+        heure_marche: heureMarche,
+        heure_arret: heureArret,
         temps_fonctionnement: tempsFonctionnement,
         quantite_consommee_heure: quantiteConsommeeHeure,
         prix_unitaire: prixUnitaire,
@@ -1911,7 +2013,7 @@
       showToast('Ravitaillement enregistré avec succès', 'success');
     });
 
-    // NOUVELLE FONCTION : Generator Maintenance Form Handling
+    // Generator Maintenance Form
     document.getElementById('generator-maintenance-form').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -1935,17 +2037,17 @@
       showToast('Maintenance enregistrée avec succès', 'success');
     });
 
-    // Fonction pour calculer le temps de fonctionnement (format HH:MM)
-    function calculateTempsFonctionnement(heureAllumage, heureExtinction) {
-      if (!heureAllumage || !heureExtinction) return '';
+    // Fonction pour calculer le temps de fonctionnement (format HH:MM) - AMÉLIORÉE
+    function calculateTempsFonctionnement(heureMarche, heureArret) {
+      if (!heureMarche || !heureArret) return '';
       
-      const [allumageHeures, allumageMinutes] = heureAllumage.split(':').map(Number);
-      const [extinctionHeures, extinctionMinutes] = heureExtinction.split(':').map(Number);
+      const [marcheHeures, marcheMinutes] = heureMarche.split(':').map(Number);
+      const [arretHeures, arretMinutes] = heureArret.split(':').map(Number);
       
-      let heuresTotal = extinctionHeures - allumageHeures;
-      let minutesTotal = extinctionMinutes - allumageMinutes;
+      let heuresTotal = arretHeures - marcheHeures;
+      let minutesTotal = arretMinutes - marcheMinutes;
       
-      // Gérer le cas où l'extinction est le lendemain
+      // Gérer le cas où l'arrêt est le lendemain
       if (heuresTotal < 0) {
         heuresTotal += 24;
       }
@@ -1954,35 +2056,27 @@
       if (minutesTotal < 0) {
         heuresTotal -= 1;
         minutesTotal += 60;
+      }
+      
+      // Si le temps est négatif (cas d'erreur), retourner 00:00
+      if (heuresTotal < 0) {
+        return '00:00';
       }
       
       return `${heuresTotal.toString().padStart(2, '0')}:${minutesTotal.toString().padStart(2, '0')}`;
     }
 
-    // Fonction pour calculer les heures en décimales
-    function calculateHeuresDecimales(heureAllumage, heureExtinction) {
-      if (!heureAllumage || !heureExtinction) return 0;
+    // Fonction pour mettre à jour automatiquement le temps de fonctionnement
+    function updateTempsFonctionnement() {
+      const heureMarche = document.getElementById('generator_carburant_heure_marche').value;
+      const heureArret = document.getElementById('generator_carburant_heure_arret').value;
       
-      const [allumageHeures, allumageMinutes] = heureAllumage.split(':').map(Number);
-      const [extinctionHeures, extinctionMinutes] = heureExtinction.split(':').map(Number);
-      
-      let heuresTotal = extinctionHeures - allumageHeures;
-      let minutesTotal = extinctionMinutes - allumageMinutes;
-      
-      // Gérer le cas où l'extinction est le lendemain
-      if (heuresTotal < 0) {
-        heuresTotal += 24;
+      if (heureMarche && heureArret) {
+        const tempsFonctionnement = calculateTempsFonctionnement(heureMarche, heureArret);
+        document.getElementById('generator_carburant_temps_fonctionnement').value = tempsFonctionnement;
+      } else {
+        document.getElementById('generator_carburant_temps_fonctionnement').value = '';
       }
-      
-      // Ajuster les minutes
-      if (minutesTotal < 0) {
-        heuresTotal -= 1;
-        minutesTotal += 60;
-      }
-      
-      // Convertir en heures décimales
-      const heuresDecimales = heuresTotal + (minutesTotal / 60);
-      return parseFloat(heuresDecimales.toFixed(2));
     }
 
     // Save Functions
@@ -2018,7 +2112,6 @@
       localStorage.setItem('fleet_generator_fuel', JSON.stringify(generatorFuelRecords));
     }
 
-    // NOUVELLE FONCTION : Save Generator Maintenance
     function saveGeneratorMaintenance() {
       localStorage.setItem('fleet_generator_maintenance', JSON.stringify(generatorMaintenance));
     }
@@ -2035,6 +2128,7 @@
           <td>${vehicle.marque}</td>
           <td>${formatVehicleType(vehicle.type)}</td>
           <td>${formatStatus(vehicle.statut)}</td>
+          <td><span class="localisation-status ${vehicle.localisation}">${formatLocalisation(vehicle.localisation)}</span></td>
           <td>
             <button class="btn btn-sm btn-outline edit-vehicle" data-id="${vehicle.id}"><i class="fas fa-edit"></i></button>
             <button class="btn btn-sm btn-outline view-vehicle" data-id="${vehicle.id}"><i class="fas fa-eye"></i></button>
@@ -2075,6 +2169,7 @@
           <td>${bike.marque}</td>
           <td>${formatBikeType(bike.type)}</td>
           <td><span class="bike-status ${bike.statut.replace(' ', '-')}">${formatStatus(bike.statut)}</span></td>
+          <td><span class="localisation-status ${bike.localisation}">${formatLocalisation(bike.localisation)}</span></td>
           <td>
             <button class="btn btn-sm btn-outline edit-bike" data-id="${bike.id}"><i class="fas fa-edit"></i></button>
             <button class="btn btn-sm btn-outline view-bike" data-id="${bike.id}"><i class="fas fa-eye"></i></button>
@@ -2115,6 +2210,7 @@
           <td>${generator.puissance} kVA</td>
           <td>${formatGeneratorType(generator.type)}</td>
           <td>${formatStatus(generator.statut)}</td>
+          <td><span class="localisation-status ${generator.localisation}">${formatLocalisation(generator.localisation)}</span></td>
           <td>
             <button class="btn btn-sm btn-outline edit-generator" data-id="${generator.id}"><i class="fas fa-edit"></i></button>
             <button class="btn btn-sm btn-outline view-generator" data-id="${generator.id}"><i class="fas fa-eye"></i></button>
@@ -2152,7 +2248,7 @@
         ...vehicles.map(vehicle => ({
           type: 'vehicle',
           date: vehicle.last_updated,
-          content: `Véhicule ${vehicle.immatriculation} mis à jour - Statut: ${formatStatus(vehicle.statut)}`,
+          content: `Véhicule ${vehicle.immatriculation} mis à jour - Statut: ${formatStatus(vehicle.statut)} - Localisation: ${formatLocalisation(vehicle.localisation)}`,
           vehicle_id: vehicle.id
         })),
         ...fuelRecords.map(fuel => ({
@@ -2195,7 +2291,7 @@
         ...bikes.map(bike => ({
           type: 'bike',
           date: bike.last_updated,
-          content: `Moto ${bike.immatriculation} mise à jour - Statut: ${formatStatus(bike.statut)}`,
+          content: `Moto ${bike.immatriculation} mise à jour - Statut: ${formatStatus(bike.statut)} - Localisation: ${formatLocalisation(bike.localisation)}`,
           bike_id: bike.id
         })),
         ...bikeMaintenance.map(maint => ({
@@ -2238,7 +2334,7 @@
         ...generators.map(generator => ({
           type: 'generator',
           date: generator.last_updated,
-          content: `Groupe électrogène ${generator.immatriculation} mis à jour - Statut: ${formatStatus(generator.statut)}`,
+          content: `Groupe électrogène ${generator.immatriculation} mis à jour - Statut: ${formatStatus(generator.statut)} - Localisation: ${formatLocalisation(generator.localisation)}`,
           generator_id: generator.id
         })),
         ...generatorFuelRecords.map(fuel => ({
@@ -2273,12 +2369,15 @@
       });
     }
 
-    // Helper Functions
+    
     function formatVehicleType(type) {
       const types = {
         'voiture': 'Voiture',
         'camion': 'Camion',
         'bus': 'Bus',
+        'pick-up': 'Pick-up',
+        'van': 'Van',
+        'fourgonette': 'Fourgonette',
         'autre': 'Autre'
       };
       return types[type] || type;
@@ -2320,7 +2419,7 @@
       return types[type] || type;
     }
 
-    // NOUVELLE FONCTION : Format Generator Maintenance Type
+    
     function formatGeneratorMaintenanceType(type) {
       const types = {
         'entretien_preventif': 'Entretien préventif',
@@ -2334,6 +2433,16 @@
         'autre': 'Autre maintenance'
       };
       return types[type] || type;
+    }
+
+    
+    function formatLocalisation(localisation) {
+      const localisations = {
+        'fixe': 'Fixe',
+        'mobile': 'Mobile',
+        'autre-site': 'Affecté à un autre site temporaire'
+      };
+      return localisations[localisation] || localisation;
     }
 
     function formatStatus(status) {
@@ -2368,7 +2477,7 @@
       return generator ? generator.immatriculation : '[Groupe inconnu]';
     }
 
-    // Populate Dropdowns
+    
     function populateVehicleDropdown() {
       const select = document.getElementById('carburant_vehicule');
       select.innerHTML = '<option value="">Sélectionner un véhicule...</option>';
@@ -2425,7 +2534,7 @@
       });
     }
 
-    // NOUVELLE FONCTION : Populate Generator Maintenance Dropdown
+    
     function populateGeneratorMaintenanceDropdown() {
       const select = document.getElementById('generator_maintenance_groupe');
       select.innerHTML = '<option value="">Sélectionner un groupe...</option>';
@@ -2438,7 +2547,7 @@
       });
     }
 
-    // CRUD Operations for Vehicles
+    
     function editVehicle(id) {
       const vehicle = vehicles.find(v => v.id === id);
       if (!vehicle) return;
@@ -2446,9 +2555,10 @@
       document.getElementById('immatriculation').value = vehicle.immatriculation;
       document.getElementById('marque').value = vehicle.marque;
       document.getElementById('type').value = vehicle.type;
-      // Formater la date pour l'affichage dans le format JJ MM AAAA
+      
       document.getElementById('date_circulation').value = formatForDisplay(vehicle.date_circulation);
       document.getElementById('statut').value = vehicle.statut;
+      document.getElementById('localisation').value = vehicle.localisation;
       document.getElementById('chauffeur').value = vehicle.chauffeur;
       document.getElementById('observations').value = vehicle.observations;
       document.getElementById('departement').value = vehicle.departement || '';
@@ -2471,7 +2581,6 @@
       
       document.getElementById('modal-title').textContent = `Détails: ${vehicle.immatriculation}`;
       
-      // Formater la date pour l'affichage
       const formattedDate = formatToFrenchDate(vehicle.date_circulation);
       
       let html = `
@@ -2493,7 +2602,11 @@
             <span class="detail-value">${formatStatus(vehicle.statut)}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Chauffeur:</span>
+            <span class="detail-label">Localisation:</span>
+            <span class="detail-value localisation-status ${vehicle.localisation}">${formatLocalisation(vehicle.localisation)}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Facteur:</span>
             <span class="detail-value">${vehicle.chauffeur || 'Non assigné'}</span>
           </div>
           <div class="detail-item">
@@ -2507,7 +2620,7 @@
         </div>
       `;
       
-      // Ajouter les informations de déplacement si elles existent
+      
       if (vehicle.destination) {
         html += `
           <h4 class="maintenance-title">Détails du Déplacement</h4>
@@ -2516,8 +2629,8 @@
               <span class="maintenance-type">Destination: ${vehicle.destination}</span>
               <span class="maintenance-date">Motif: ${vehicle.motif_deplacement || 'Non spécifié'}</span>
             </div>
-            <div class="maintenance-cost">Kilométrage avant: ${vehicle.km_avant || 'N/A'} km</div>
-            <div class="maintenance-cost">Kilométrage après: ${vehicle.km_apres || 'N/A'} km</div>
+            <div class="maintenance-cost">Kilométrage départ: ${vehicle.km_avant || 'N/A'} km</div>
+            <div class="maintenance-cost">Kilométrage arrivée: ${vehicle.km_apres || 'N/A'} km</div>
             <div class="maintenance-cost">Distance parcourue: ${vehicle.km_parcouru || 'N/A'} km</div>
           </div>
         `;
@@ -2579,7 +2692,7 @@
       }
     }
 
-    // CRUD Operations for Bikes
+    
     function editBike(id) {
       const bike = bikes.find(b => b.id === id);
       if (!bike) return;
@@ -2587,9 +2700,10 @@
       document.getElementById('bike_immatriculation').value = bike.immatriculation;
       document.getElementById('bike_marque').value = bike.marque;
       document.getElementById('bike_type').value = bike.type;
-      // Formater la date pour l'affichage dans le format JJ MM AAAA
+    
       document.getElementById('bike_date_circulation').value = formatForDisplay(bike.date_circulation);
       document.getElementById('bike_statut').value = bike.statut;
+      document.getElementById('bike_localisation').value = bike.localisation;
       document.getElementById('bike_chauffeur').value = bike.chauffeur;
       document.getElementById('bike_observations').value = bike.observations;
       
@@ -2606,7 +2720,6 @@
       
       document.getElementById('bike-modal-title').textContent = `Détails: ${bike.immatriculation}`;
       
-      // Formater la date pour l'affichage
       const formattedDate = formatToFrenchDate(bike.date_circulation);
       
       let html = `
@@ -2628,7 +2741,11 @@
             <span class="detail-value bike-status ${bike.statut.replace(' ', '-')}">${formatStatus(bike.statut)}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Livreur:</span>
+            <span class="detail-label">Localisation:</span>
+            <span class="detail-value localisation-status ${bike.localisation}">${formatLocalisation(bike.localisation)}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Facteur:</span>
             <span class="detail-value">${bike.chauffeur || 'Non assigné'}</span>
           </div>
           <div class="detail-item full-width">
@@ -2694,7 +2811,7 @@
       }
     }
 
-    // CRUD Operations for Generators
+    
     function editGenerator(id) {
       const generator = generators.find(g => g.id === id);
       if (!generator) return;
@@ -2703,9 +2820,10 @@
       document.getElementById('generator_marque').value = generator.marque;
       document.getElementById('generator_type').value = generator.type;
       document.getElementById('generator_puissance').value = generator.puissance;
-      // Formater la date pour l'affichage dans le format JJ MM AAAA
+      
       document.getElementById('generator_date_mise_service').value = formatForDisplay(generator.date_mise_service);
       document.getElementById('generator_statut').value = generator.statut;
+      document.getElementById('generator_localisation').value = generator.localisation;
       document.getElementById('generator_observations').value = generator.observations;
       
       document.getElementById('generator-form').setAttribute('data-edit-id', generator.id);
@@ -2721,7 +2839,7 @@
       
       document.getElementById('generator-modal-title').textContent = `Détails: ${generator.immatriculation}`;
       
-      // Formater la date pour l'affichage
+      
       const formattedDate = formatToFrenchDate(generator.date_mise_service);
       
       let html = `
@@ -2746,6 +2864,10 @@
             <span class="detail-label">Statut:</span>
             <span class="detail-value">${formatStatus(generator.statut)}</span>
           </div>
+          <div class="detail-item">
+            <span class="detail-label">Localisation:</span>
+            <span class="detail-value localisation-status ${generator.localisation}">${formatLocalisation(generator.localisation)}</span>
+          </div>
           <div class="detail-item full-width">
             <span class="detail-label">Observations:</span>
             <span class="detail-value">${generator.observations || 'Aucune'}</span>
@@ -2760,7 +2882,7 @@
             ${fuelRecordsForGenerator.map(fuel => `
               <div class="fuel-item">
                 <div class="fuel-header">
-                  <span class="fuel-date">${formatDate(fuel.date)} - Allumage: ${fuel.heure_allumage} - Extinction: ${fuel.heure_extinction}</span>
+                  <span class="fuel-date">${formatDate(fuel.date)} - Marche: ${fuel.heure_marche} - Arrêt: ${fuel.heure_arret}</span>
                 </div>
                 <div class="fuel-quantity">Quantité ravitaillée: ${fuel.quantite_ravitailler}L</div>
                 <div class="fuel-cost">Temps fonctionnement: ${fuel.temps_fonctionnement}</div>
@@ -2808,7 +2930,7 @@
       }
     }
 
-    // Modal Handling
+
     function closeModal() {
       document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.remove('show');
@@ -2825,7 +2947,6 @@
       });
     });
 
-    // Toast Notification
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -2835,7 +2956,7 @@
       }, 3000);
     }
 
-    // Search Functionality
+  
     document.getElementById('search-vehicule').addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
       const rows = document.querySelectorAll('#vehicules-table tbody tr');
@@ -2866,28 +2987,46 @@
       });
     });
 
-    // Filter Event Listeners
+  
     document.getElementById('filter-type').addEventListener('change', renderHistory);
     document.getElementById('bike-filter-type').addEventListener('change', renderBikeHistory);
     document.getElementById('generator-filter-type').addEventListener('change', renderGeneratorHistory);
 
-    // Auto-calculation for fuel forms MODIFIÉ
+  
     function setupAutoCalculations() {
-      // Vehicle fuel calculations
+      
       document.getElementById('carburant_km_depart').addEventListener('input', calculateVehicleFuel);
       document.getElementById('carburant_km_arrivee').addEventListener('input', calculateVehicleFuel);
       document.getElementById('carburant_litres').addEventListener('input', calculateVehicleFuel);
       document.getElementById('carburant_prix_unitaire').addEventListener('input', calculateVehicleFuel);
       
-      // Bike fuel calculations
+    
       document.getElementById('bike_carburant_km_depart').addEventListener('input', calculateBikeFuel);
       document.getElementById('bike_carburant_km_arrivee').addEventListener('input', calculateBikeFuel);
       document.getElementById('bike_carburant_litres').addEventListener('input', calculateBikeFuel);
       document.getElementById('bike_carburant_prix_unitaire').addEventListener('input', calculateBikeFuel);
       
-      // Generator fuel calculations MODIFIÉ (seulement le coût total)
+      
       document.getElementById('generator_carburant_quantite_ravitailler').addEventListener('input', calculateGeneratorFuel);
       document.getElementById('generator_carburant_prix_unitaire').addEventListener('input', calculateGeneratorFuel);
+      
+    
+      document.getElementById('km_avant').addEventListener('input', calculateKilometrageParcouru);
+      document.getElementById('km_apres').addEventListener('input', calculateKilometrageParcouru);
+
+      // Ajout des écouteurs pour le calcul automatique du temps de fonctionnement
+      document.getElementById('generator_carburant_heure_marche').addEventListener('change', updateTempsFonctionnement);
+      document.getElementById('generator_carburant_heure_arret').addEventListener('change', updateTempsFonctionnement);
+    }
+
+    
+    function calculateKilometrageParcouru() {
+      const kmAvant = parseFloat(document.getElementById('km_avant').value) || 0;
+      const kmApres = parseFloat(document.getElementById('km_apres').value) || 0;
+      
+      const kmParcouru = kmApres - kmAvant;
+      
+      document.getElementById('km_parcouru').value = kmParcouru > 0 ? kmParcouru : '';
     }
 
     function calculateVehicleFuel() {
@@ -2916,7 +3055,7 @@
       document.getElementById('bike_carburant_cout').value = coutTotal > 0 ? coutTotal.toFixed(2) : '';
     }
 
-    // MODIFIÉ : Supprimer les calculs automatiques pour les générateurs
+    
     function calculateGeneratorFuel() {
       const quantiteRavitailler = parseFloat(document.getElementById('generator_carburant_quantite_ravitailler').value) || 0;
       const prixUnitaire = parseFloat(document.getElementById('generator_carburant_prix_unitaire').value) || 0;
@@ -2926,24 +3065,24 @@
       document.getElementById('generator_carburant_cout').value = coutTotal > 0 ? coutTotal.toFixed(2) : '';
     }
 
-    // Export to Excel
     document.getElementById('export-excel').addEventListener('click', function() {
-      // Create workbook with all data
+      
       const wb = XLSX.utils.book_new();
       
-      // Vehicles sheet
+      
       const vehicleData = vehicles.map(v => ({
         'Immatriculation': v.immatriculation,
         'Marque/Modèle': v.marque,
         'Type': formatVehicleType(v.type),
         'Date circulation': formatToFrenchDate(v.date_circulation),
         'Statut': formatStatus(v.statut),
-        'Chauffeur': v.chauffeur || '',
+        'Localisation': formatLocalisation(v.localisation),
+        'Facteur': v.chauffeur || '',
         'Département': v.departement || '',
         'Destination': v.destination || '',
         'Motif déplacement': v.motif_deplacement || '',
-        'Km avant': v.km_avant || '',
-        'Km après': v.km_apres || '',
+        'Km départ': v.km_avant || '',
+        'Km arrivée': v.km_apres || '',
         'Km parcouru': v.km_parcouru || '',
         'Observations': v.observations || ''
       }));
@@ -2951,21 +3090,22 @@
       const vehicleWS = XLSX.utils.json_to_sheet(vehicleData);
       XLSX.utils.book_append_sheet(wb, vehicleWS, "Véhicules");
       
-      // Bikes sheet
+      
       const bikeData = bikes.map(b => ({
         'Immatriculation': b.immatriculation,
         'Marque/Modèle': b.marque,
         'Type': formatBikeType(b.type),
         'Date circulation': formatToFrenchDate(b.date_circulation),
         'Statut': formatStatus(b.statut),
-        'Livreur': b.chauffeur || '',
+        'Localisation': formatLocalisation(b.localisation),
+        'Facteur': b.chauffeur || '',
         'Observations': b.observations || ''
       }));
       
       const bikeWS = XLSX.utils.json_to_sheet(bikeData);
       XLSX.utils.book_append_sheet(wb, bikeWS, "Motos");
       
-      // Generators sheet
+      
       const generatorData = generators.map(g => ({
         'N° Inventaire': g.immatriculation,
         'Marque/Modèle': g.marque,
@@ -2973,13 +3113,14 @@
         'Puissance (kVA)': g.puissance,
         'Date mise service': formatToFrenchDate(g.date_mise_service),
         'Statut': formatStatus(g.statut),
+        'Localisation': formatLocalisation(g.localisation),
         'Observations': g.observations || ''
       }));
       
       const generatorWS = XLSX.utils.json_to_sheet(generatorData);
       XLSX.utils.book_append_sheet(wb, generatorWS, "Groupes Électrogènes");
       
-      // Vehicle maintenance sheet
+      
       if (vehicleMaintenance.length > 0) {
         const vehicleMaintenanceData = vehicleMaintenance.map(m => {
           const vehicle = vehicles.find(v => v.id === m.vehicle_id) || {};
@@ -2996,7 +3137,7 @@
         XLSX.utils.book_append_sheet(wb, vehicleMaintenanceWS, "Maintenance Véhicules");
       }
       
-      // Bike maintenance sheet
+
       if (bikeMaintenance.length > 0) {
         const bikeMaintenanceData = bikeMaintenance.map(m => {
           const bike = bikes.find(b => b.id === m.bike_id) || {};
@@ -3013,7 +3154,7 @@
         XLSX.utils.book_append_sheet(wb, bikeMaintenanceWS, "Maintenance Motos");
       }
       
-      // Generator maintenance sheet
+      
       if (generatorMaintenance.length > 0) {
         const generatorMaintenanceData = generatorMaintenance.map(m => {
           const generator = generators.find(g => g.id === m.generator_id) || {};
@@ -3030,7 +3171,7 @@
         XLSX.utils.book_append_sheet(wb, generatorMaintenanceWS, "Maintenance Groupes");
       }
       
-      // Vehicle fuel sheet
+      
       if (fuelRecords.length > 0) {
         const vehicleFuelData = fuelRecords.map(f => {
           const vehicle = vehicles.find(v => v.id === f.vehicle_id) || {};
@@ -3052,7 +3193,7 @@
         XLSX.utils.book_append_sheet(wb, vehicleFuelWS, "Carburant Véhicules");
       }
       
-      // Bike fuel sheet
+      
       if (bikeFuelRecords.length > 0) {
         const bikeFuelData = bikeFuelRecords.map(f => {
           const bike = bikes.find(b => b.id === f.bike_id) || {};
@@ -3074,7 +3215,7 @@
         XLSX.utils.book_append_sheet(wb, bikeFuelWS, "Carburant Motos");
       }
       
-      // Generator fuel sheet MODIFIÉ
+      
       if (generatorFuelRecords.length > 0) {
         const generatorFuelData = generatorFuelRecords.map(f => {
           const generator = generators.find(g => g.id === f.generator_id) || {};
@@ -3082,8 +3223,8 @@
             'Groupe': generator.immatriculation || 'Inconnu',
             'Date': formatToFrenchDate(f.date),
             'Quantité ravitaillée (L)': f.quantite_ravitailler,
-            'Heure allumage': f.heure_allumage,
-            'Heure extinction': f.heure_extinction,
+            'Heure marche': f.heure_marche,
+            'Heure arrêt': f.heure_arret,
             'Temps fonctionnement': f.temps_fonctionnement,
             'Quantité consommée/h (L/h)': f.quantite_consommee_heure,
             'Prix unitaire': f.prix_unitaire,
@@ -3095,12 +3236,12 @@
         XLSX.utils.book_append_sheet(wb, generatorFuelWS, "Carburant Groupes");
       }
       
-      // Export the workbook
+  
       XLSX.writeFile(wb, "gestion_flotte.xlsx");
       showToast('Export Excel réussi', 'success');
     });
 
-    // Initialize the App
+    
     function initApp() {
       renderVehiclesList();
       renderHistory();
@@ -3114,9 +3255,7 @@
       populateGeneratorMaintenanceDropdown();
       setupAutoCalculations();
     }
-
-    // Initialize when DOM is loaded
-    document.addEventListener('DOMContentLoaded', initApp);
+ document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
