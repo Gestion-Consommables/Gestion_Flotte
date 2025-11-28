@@ -1619,6 +1619,11 @@
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  const SUPABASE_URL = "https://uoftrepujeeugbielnkz.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZnRyZXB1amVldWdiaWVsbmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwNjQxNDksImV4cCI6MjA3OTY0MDE0OX0.FzQf_xR-CmV2qnJaIfdWr7eDH0paip78xI5oa0b1ges";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     
     document.getElementById('toggle-theme').addEventListener('click', function() {
       const currentTheme = document.documentElement.getAttribute('data-theme');
