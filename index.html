@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Flottes - Poste Guinéenne</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Add Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --primary-color: #3498db;
@@ -609,6 +611,21 @@
       font-weight: 500;
     }
 
+    .localisation-status.garage {
+      background-color: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .localisation-status.en-circulation {
+      background-color: #e8f5e8;
+      color: #2e7d32;
+    }
+
+    .localisation-status.bureau {
+      background-color: #fff3e0;
+      color: #ef6c00;
+    }
+
     .localisation-status.fixe {
       background-color: #e3f2fd;
       color: #1565c0;
@@ -622,6 +639,21 @@
     .localisation-status.autre-site {
       background-color: #fff3e0;
       color: #ef6c00;
+    }
+
+    [data-theme="dark"] .localisation-status.garage {
+      background-color: #0d47a1;
+      color: #e3f2fd;
+    }
+
+    [data-theme="dark"] .localisation-status.en-circulation {
+      background-color: #1b5e20;
+      color: #e8f5e8;
+    }
+
+    [data-theme="dark"] .localisation-status.bureau {
+      background-color: #e65100;
+      color: #fff3e0;
     }
 
     [data-theme="dark"] .localisation-status.fixe {
@@ -779,7 +811,6 @@
                   <option value="bus">Bus</option>
                   <option value="pick-up">Pick-up</option>
                   <option value="van">Van</option>
-                  <option value="fourgonette">Fourgonette</option>
                   <option value="autre">Autre</option>
                 </select>
               </div>
@@ -805,9 +836,9 @@
               <div class="form-group">
                 <label for="localisation">Localisation</label>
                 <select id="localisation" required>
-                  <option value="en_circulation">En circulation</option>
                   <option value="garage">Garage</option>
-                  <option value="au_bureau">Au Bureau</option>
+                  <option value="en-circulation">En circulation</option>
+                  <option value="bureau">Bureau</option>
                 </select>
               </div>
               
@@ -828,12 +859,12 @@
                   <option value="">Sélectionner...</option>
                   <option value="DG">Direction Générale (DG)</option>
                   <option value="DGA">Direction Générale Adjointe (DGA)</option>
-                  <option value="DSI">Département des Systèmes d'Information (DSI)</option>
+                  <option value="DSI">Direction des Systèmes d'Information (DSI)</option>
                   <option value="DSP">Direction des Services Postaux (DSP)</option>
                   <option value="DRH">Direction des Ressources Humaines (DRH)</option>
-                  <option value="DPLMG">Direction du Patrimoine de la Logistique et Moyens Généraux (DPLMG)</option>
-                  <option value="DSPS">Direction des Prospectives et Strategie des Projets(DPSP))</option>
-                  <option value="DACQ">Direction d'Audit et Control Qualité (DACQ)</option>
+                  <option value="DPLMG">Direction de la Logistique et Moyens Généraux (DPLMG)</option>
+                  <option value="DSPS">Direction de la Sécurité et Protection Sociale (DSPS)</option>
+                  <option value="DACQ">Direction des Achats (DACQ)</option>
                   <option value="DSJ">Direction des Services Juridiques (DSJ)</option>
                   <option value="DAF">Direction des Affaires Financières (DAF)</option>
                 </select>
@@ -1111,9 +1142,9 @@
               <div class="form-group">
                 <label for="bike_localisation">Localisation</label>
                 <select id="bike_localisation" required>
-                  <option value="en_circulation">En Circulation</option>
                   <option value="garage">Garage</option>
-                  <option value="au_bureau">Au Bureau</option>
+                  <option value="en-circulation">En circulation</option>
+                  <option value="bureau">Bureau</option>
                 </select>
               </div>
               
@@ -1619,825 +1650,62 @@
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script>
+    // ============================================
+    // CONFIGURATION SUPABASE
+    // ============================================
+    // REMPLACEZ CES VALEURS AVEC VOS PROPRES CRÉDENTIALS SUPABASE
+    const SUPABASE_URL = 'https://cxqyjgfnelzunbbxvaiu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4cXlqZ2ZuZWx6dW5iYnh2YWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1ODczOTksImV4cCI6MjA4MDE2MzM5OX0.Gj6HCxcIKv0o4mImP4IH2Thur5lm0QOqVMEKzY1JVxo';
     
-    document.getElementById('toggle-theme').addEventListener('click', function() {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? '' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      this.innerHTML = newTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-      localStorage.setItem('fleet_theme', newTheme);
-    });
+    // Initialisation de Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ============================================
+    // VARIABLES GLOBALES ET ÉTAT
+    // ============================================
+    let editingVehicleId = null;
+    let editingBikeId = null;
+    let editingGeneratorId = null;
+    let currentVehiclePage = 1;
+    let currentBikePage = 1;
+    let currentGeneratorPage = 1;
+    const itemsPerPage = 10;
+
+    // ============================================
+    // FONCTIONS UTILITAIRES
+    // ============================================
     
-    const savedTheme = localStorage.getItem('fleet_theme') || '';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('toggle-theme').innerHTML = savedTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-
-    
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-        tab.classList.add('active');
-        const tabId = tab.getAttribute('data-tab') + '-tab';
-        document.getElementById(tabId).classList.add('active');
-      });
-    });
-
-    
-    let vehicles = JSON.parse(localStorage.getItem('fleet_vehicles')) || [];
-    let fuelRecords = JSON.parse(localStorage.getItem('fleet_fuel')) || [];
-    let bikes = JSON.parse(localStorage.getItem('fleet_bikes')) || [];
-    let bikeMaintenance = JSON.parse(localStorage.getItem('fleet_bike_maintenance')) || [];
-    let vehicleMaintenance = JSON.parse(localStorage.getItem('fleet_vehicle_maintenance')) || [];
-    let bikeFuelRecords = JSON.parse(localStorage.getItem('fleet_bike_fuel')) || [];
-    let generators = JSON.parse(localStorage.getItem('fleet_generators')) || [];
-    let generatorFuelRecords = JSON.parse(localStorage.getItem('fleet_generator_fuel')) || [];
-    let generatorMaintenance = JSON.parse(localStorage.getItem('fleet_generator_maintenance')) || [];
-
-    // Fonction pour convertir le format JJ MM AAAA en format date standard (YYYY-MM-DD)
-    function convertToStandardDate(dateString) {
-      if (!dateString) return '';
+    // Fonction pour afficher les notifications
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast';
       
-      // Supprimer les espaces multiples et diviser la chaîne
-      const parts = dateString.trim().split(/\s+/);
-      
-      if (parts.length !== 3) {
-        return dateString; // Retourner la chaîne originale si le format n'est pas valide
-      }
-      
-      const [day, month, year] = parts;
-      
-      // Formater en YYYY-MM-DD pour le stockage
-      const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      
-      // Vérifier si la date est valide
-      const date = new Date(formattedDate);
-      if (isNaN(date.getTime())) {
-        return dateString; // Retourner la chaîne originale si la date n'est pas valide
-      }
-      
-      return formattedDate;
-    }
-
-    // Fonction pour formater la date en format français (JJ/MM/AAAA)
-    function formatToFrenchDate(dateString) {
-      if (!dateString) return '';
-      
-      // Si c'est déjà au format YYYY-MM-DD, le convertir
-      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [year, month, day] = dateString.split('-');
-        return `${day}/${month}/${year}`;
-      }
-      
-      // Si c'est au format JJ MM AAAA, le formater en JJ/MM/AAAA
-      if (dateString.match(/^\d{1,2}\s+\d{1,2}\s+\d{4}$/)) {
-        const parts = dateString.trim().split(/\s+/);
-        const [day, month, year] = parts;
-        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-      }
-      
-      return dateString;
-    }
-
-    // Fonction pour formater la date pour l'affichage (JJ MM AAAA)
-    function formatForDisplay(dateString) {
-      if (!dateString) return '';
-      
-      // Si c'est au format YYYY-MM-DD, le convertir en JJ MM AAAA
-      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [year, month, day] = dateString.split('-');
-        return `${parseInt(day)} ${parseInt(month)} ${year}`;
-      }
-      
-      return dateString;
-    }
-
-    // Vehicle Form Handling
-    document.getElementById('vehicule-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const dateCirculation = convertToStandardDate(document.getElementById('date_circulation').value);
-      
-      const vehicleData = {
-        id: Date.now().toString(),
-        immatriculation: document.getElementById('immatriculation').value,
-        marque: document.getElementById('marque').value,
-        type: document.getElementById('type').value,
-        date_circulation: dateCirculation,
-        statut: document.getElementById('statut').value,
-        localisation: document.getElementById('localisation').value,
-        chauffeur: document.getElementById('chauffeur').value,
-        observations: document.getElementById('observations').value,
-        departement: document.getElementById('departement').value,
-        destination: document.getElementById('destination').value,
-        motif_deplacement: document.getElementById('motif_deplacement').value,
-        km_avant: document.getElementById('km_avant').value,
-        km_apres: document.getElementById('km_apres').value,
-        km_parcouru: document.getElementById('km_parcouru').value,
-        last_updated: new Date().toISOString()
-      };
-      
-      const existingVehicleId = this.getAttribute('data-edit-id');
-      if (existingVehicleId) {
-        const index = vehicles.findIndex(v => v.id === existingVehicleId);
-        if (index !== -1) {
-          vehicles[index] = {...vehicles[index], ...vehicleData};
-        }
+      // Ajouter classe de type
+      if (type === 'success') {
+        toast.style.backgroundColor = '#27ae60';
+      } else if (type === 'error') {
+        toast.style.backgroundColor = '#e74c3c';
+      } else if (type === 'warning') {
+        toast.style.backgroundColor = '#f39c12';
       } else {
-        vehicles.push(vehicleData);
+        toast.style.backgroundColor = '#2c3e50';
       }
       
-      saveVehicles();
-      renderVehiclesList();
-      resetVehicleForm();
-      showToast('Véhicule enregistré avec succès', 'success');
-    });
-
-    function resetVehicleForm() {
-      document.getElementById('vehicule-form').reset();
-      document.getElementById('vehicule-form').removeAttribute('data-edit-id');
+      toast.classList.add('show');
+      
+      // Masquer après 3 secondes
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
     }
 
-    document.getElementById('clear-form').addEventListener('click', resetVehicleForm);
-    document.getElementById('cancel-edit').addEventListener('click', resetVehicleForm);
-
-    // Vehicle Fuel Form Handling with calculations MODIFIÉ
-    document.getElementById('carburant-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const fuelDate = convertToStandardDate(document.getElementById('carburant_date').value);
-      
-      const kmDepart = parseFloat(document.getElementById('carburant_km_depart').value);
-      const kmArrivee = parseFloat(document.getElementById('carburant_km_arrivee').value);
-      const kmParcouru = kmArrivee - kmDepart;
-      const litres = parseFloat(document.getElementById('carburant_litres').value);
-      const prixUnitaire = parseFloat(document.getElementById('carburant_prix_unitaire').value);
-      const coutTotal = litres * prixUnitaire;
-      const consommation100km = document.getElementById('carburant_consommation_100km').value;
-      
-      const fuelData = {
-        id: Date.now().toString(),
-        vehicle_id: document.getElementById('carburant_vehicule').value,
-        date: fuelDate,
-        km_depart: kmDepart,
-        km_arrivee: kmArrivee,
-        km_parcouru: kmParcouru,
-        litres: litres,
-        consommation_100km: consommation100km,
-        prix_unitaire: prixUnitaire,
-        cout: coutTotal,
-        type: document.getElementById('carburant_type').value,
-        created_at: new Date().toISOString()
-      };
-      
-      fuelRecords.push(fuelData);
-      saveFuelRecords();
-      this.reset();
-      renderHistory();
-      showToast('Ravitaillement enregistré avec succès', 'success');
-    });
-
-    // Vehicle Maintenance Form
-    document.getElementById('vehicle-maintenance-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const maintenanceDate = convertToStandardDate(document.getElementById('vehicle_maintenance_date').value);
-      
-      const maintenanceData = {
-        id: Date.now().toString(),
-        vehicle_id: document.getElementById('vehicle_maintenance_vehicule').value,
-        date: maintenanceDate,
-        type: document.getElementById('vehicle_maintenance_type').value,
-        cout: document.getElementById('vehicle_maintenance_cout').value || 0,
-        description: document.getElementById('vehicle_maintenance_description').value,
-        created_at: new Date().toISOString()
-      };
-      
-      vehicleMaintenance.push(maintenanceData);
-      saveVehicleMaintenance();
-      this.reset();
-      renderHistory();
-      showToast('Maintenance enregistrée avec succès', 'success');
-    });
-
-    // Bike Form Handling
-    document.getElementById('bike-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const dateCirculation = convertToStandardDate(document.getElementById('bike_date_circulation').value);
-      
-      const bikeData = {
-        id: Date.now().toString(),
-        immatriculation: document.getElementById('bike_immatriculation').value,
-        marque: document.getElementById('bike_marque').value,
-        type: document.getElementById('bike_type').value,
-        date_circulation: dateCirculation,
-        statut: document.getElementById('bike_statut').value,
-        localisation: document.getElementById('bike_localisation').value,
-        chauffeur: document.getElementById('bike_chauffeur').value,
-        observations: document.getElementById('bike_observations').value,
-        last_updated: new Date().toISOString()
-      };
-      
-      const existingBikeId = this.getAttribute('data-edit-id');
-      if (existingBikeId) {
-        const index = bikes.findIndex(b => b.id === existingBikeId);
-        if (index !== -1) {
-          bikes[index] = {...bikes[index], ...bikeData};
-        }
-      } else {
-        bikes.push(bikeData);
-      }
-      
-      saveBikes();
-      renderBikesList();
-      resetBikeForm();
-      showToast('Moto enregistrée avec succès', 'success');
-    });
-
-    function resetBikeForm() {
-      document.getElementById('bike-form').reset();
-      document.getElementById('bike-form').removeAttribute('data-edit-id');
-    }
-
-    document.getElementById('clear-bike-form').addEventListener('click', resetBikeForm);
-    document.getElementById('cancel-bike-edit').addEventListener('click', resetBikeForm);
-
-    // Bike Fuel Form Handling with calculations MODIFIÉ
-    document.getElementById('bike-carburant-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const fuelDate = convertToStandardDate(document.getElementById('bike_carburant_date').value);
-      
-      const kmDepart = parseFloat(document.getElementById('bike_carburant_km_depart').value);
-      const kmArrivee = parseFloat(document.getElementById('bike_carburant_km_arrivee').value);
-      const kmParcouru = kmArrivee - kmDepart;
-      const litres = parseFloat(document.getElementById('bike_carburant_litres').value);
-      const prixUnitaire = parseFloat(document.getElementById('bike_carburant_prix_unitaire').value);
-      const coutTotal = litres * prixUnitaire;
-      const consommation100km = document.getElementById('bike_carburant_consommation_100km').value;
-      
-      const fuelData = {
-        id: Date.now().toString(),
-        bike_id: document.getElementById('bike_carburant_moto').value,
-        date: fuelDate,
-        km_depart: kmDepart,
-        km_arrivee: kmArrivee,
-        km_parcouru: kmParcouru,
-        litres: litres,
-        consommation_100km: consommation100km,
-        prix_unitaire: prixUnitaire,
-        cout: coutTotal,
-        type: document.getElementById('bike_carburant_type').value,
-        created_at: new Date().toISOString()
-      };
-      
-      bikeFuelRecords.push(fuelData);
-      saveBikeFuelRecords();
-      this.reset();
-      renderBikeHistory();
-      showToast('Ravitaillement enregistré avec succès', 'success');
-    });
-
-    // Bike Maintenance Form
-    document.getElementById('bike-maintenance-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const maintenanceDate = convertToStandardDate(document.getElementById('maintenance_date').value);
-      
-      const maintenanceData = {
-        id: Date.now().toString(),
-        bike_id: document.getElementById('maintenance_bike').value,
-        date: maintenanceDate,
-        type: document.getElementById('maintenance_type').value,
-        cout: document.getElementById('maintenance_cout').value || 0,
-        description: document.getElementById('maintenance_description').value,
-        created_at: new Date().toISOString()
-      };
-      
-      bikeMaintenance.push(maintenanceData);
-      saveBikeMaintenance();
-      this.reset();
-      renderBikeHistory();
-      showToast('Maintenance enregistrée avec succès', 'success');
-    });
-
-    // Generator Form Handling
-    document.getElementById('generator-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const dateMiseService = convertToStandardDate(document.getElementById('generator_date_mise_service').value);
-      
-      const generatorData = {
-        id: Date.now().toString(),
-        immatriculation: document.getElementById('generator_immatriculation').value,
-        marque: document.getElementById('generator_marque').value,
-        type: document.getElementById('generator_type').value,
-        puissance: document.getElementById('generator_puissance').value,
-        date_mise_service: dateMiseService,
-        statut: document.getElementById('generator_statut').value,
-        localisation: document.getElementById('generator_localisation').value,
-        observations: document.getElementById('generator_observations').value,
-        last_updated: new Date().toISOString()
-      };
-      
-      const existingGeneratorId = this.getAttribute('data-edit-id');
-      if (existingGeneratorId) {
-        const index = generators.findIndex(g => g.id === existingGeneratorId);
-        if (index !== -1) {
-          generators[index] = {...generators[index], ...generatorData};
-        }
-      } else {
-        generators.push(generatorData);
-      }
-      
-      saveGenerators();
-      renderGeneratorsList();
-      resetGeneratorForm();
-      showToast('Groupe électrogène enregistré avec succès', 'success');
-    });
-
-    function resetGeneratorForm() {
-      document.getElementById('generator-form').reset();
-      document.getElementById('generator-form').removeAttribute('data-edit-id');
-    }
-
-    document.getElementById('clear-generator-form').addEventListener('click', resetGeneratorForm);
-    document.getElementById('cancel-generator-edit').addEventListener('click', resetGeneratorForm);
-
-    // Generator Fuel Form Handling avec calcul automatique du temps de fonctionnement
-    document.getElementById('generator-carburant-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const fuelDate = convertToStandardDate(document.getElementById('generator_carburant_date').value);
-      
-      const quantiteRavitailler = parseFloat(document.getElementById('generator_carburant_quantite_ravitailler').value);
-      const heureMarche = document.getElementById('generator_carburant_heure_marche').value;
-      const heureArret = document.getElementById('generator_carburant_heure_arret').value;
-      
-      // Calcul automatique du temps de fonctionnement
-      const tempsFonctionnement = calculateTempsFonctionnement(heureMarche, heureArret);
-      
-      const quantiteConsommeeHeure = parseFloat(document.getElementById('generator_carburant_quantite_consommee_heure').value);
-      const prixUnitaire = parseFloat(document.getElementById('generator_carburant_prix_unitaire').value);
-      const coutTotal = quantiteRavitailler * prixUnitaire;
-      
-      const fuelData = {
-        id: Date.now().toString(),
-        generator_id: document.getElementById('generator_carburant_groupe').value,
-        date: fuelDate,
-        quantite_ravitailler: quantiteRavitailler,
-        heure_marche: heureMarche,
-        heure_arret: heureArret,
-        temps_fonctionnement: tempsFonctionnement,
-        quantite_consommee_heure: quantiteConsommeeHeure,
-        prix_unitaire: prixUnitaire,
-        cout: coutTotal,
-        created_at: new Date().toISOString()
-      };
-      
-      generatorFuelRecords.push(fuelData);
-      saveGeneratorFuelRecords();
-      this.reset();
-      renderGeneratorHistory();
-      showToast('Ravitaillement enregistré avec succès', 'success');
-    });
-
-    // Generator Maintenance Form
-    document.getElementById('generator-maintenance-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Convertir la date au format standard pour le stockage
-      const maintenanceDate = convertToStandardDate(document.getElementById('generator_maintenance_date').value);
-      
-      const maintenanceData = {
-        id: Date.now().toString(),
-        generator_id: document.getElementById('generator_maintenance_groupe').value,
-        date: maintenanceDate,
-        type: document.getElementById('generator_maintenance_type').value,
-        cout: document.getElementById('generator_maintenance_cout').value || 0,
-        description: document.getElementById('generator_maintenance_description').value,
-        created_at: new Date().toISOString()
-      };
-      
-      generatorMaintenance.push(maintenanceData);
-      saveGeneratorMaintenance();
-      this.reset();
-      renderGeneratorHistory();
-      showToast('Maintenance enregistrée avec succès', 'success');
-    });
-
-    // Fonction pour calculer le temps de fonctionnement (format HH:MM) - AMÉLIORÉE
-    function calculateTempsFonctionnement(heureMarche, heureArret) {
-      if (!heureMarche || !heureArret) return '';
-      
-      const [marcheHeures, marcheMinutes] = heureMarche.split(':').map(Number);
-      const [arretHeures, arretMinutes] = heureArret.split(':').map(Number);
-      
-      let heuresTotal = arretHeures - marcheHeures;
-      let minutesTotal = arretMinutes - marcheMinutes;
-      
-      // Gérer le cas où l'arrêt est le lendemain
-      if (heuresTotal < 0) {
-        heuresTotal += 24;
-      }
-      
-      // Ajuster les minutes
-      if (minutesTotal < 0) {
-        heuresTotal -= 1;
-        minutesTotal += 60;
-      }
-      
-      // Si le temps est négatif (cas d'erreur), retourner 00:00
-      if (heuresTotal < 0) {
-        return '00:00';
-      }
-      
-      return `${heuresTotal.toString().padStart(2, '0')}:${minutesTotal.toString().padStart(2, '0')}`;
-    }
-
-    // Fonction pour mettre à jour automatiquement le temps de fonctionnement
-    function updateTempsFonctionnement() {
-      const heureMarche = document.getElementById('generator_carburant_heure_marche').value;
-      const heureArret = document.getElementById('generator_carburant_heure_arret').value;
-      
-      if (heureMarche && heureArret) {
-        const tempsFonctionnement = calculateTempsFonctionnement(heureMarche, heureArret);
-        document.getElementById('generator_carburant_temps_fonctionnement').value = tempsFonctionnement;
-      } else {
-        document.getElementById('generator_carburant_temps_fonctionnement').value = '';
-      }
-    }
-
-    // Save Functions
-    function saveVehicles() {
-      localStorage.setItem('fleet_vehicles', JSON.stringify(vehicles));
-    }
-
-    function saveFuelRecords() {
-      localStorage.setItem('fleet_fuel', JSON.stringify(fuelRecords));
-    }
-
-    function saveBikes() {
-      localStorage.setItem('fleet_bikes', JSON.stringify(bikes));
-    }
-
-    function saveBikeMaintenance() {
-      localStorage.setItem('fleet_bike_maintenance', JSON.stringify(bikeMaintenance));
-    }
-    
-    function saveVehicleMaintenance() {
-      localStorage.setItem('fleet_vehicle_maintenance', JSON.stringify(vehicleMaintenance));
-    }
-    
-    function saveBikeFuelRecords() {
-      localStorage.setItem('fleet_bike_fuel', JSON.stringify(bikeFuelRecords));
-    }
-
-    function saveGenerators() {
-      localStorage.setItem('fleet_generators', JSON.stringify(generators));
-    }
-
-    function saveGeneratorFuelRecords() {
-      localStorage.setItem('fleet_generator_fuel', JSON.stringify(generatorFuelRecords));
-    }
-
-    function saveGeneratorMaintenance() {
-      localStorage.setItem('fleet_generator_maintenance', JSON.stringify(generatorMaintenance));
-    }
-
-    // Rendering Functions
-    function renderVehiclesList() {
-      const container = document.getElementById('liste-vehicules');
-      container.innerHTML = '';
-      
-      vehicles.forEach(vehicle => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${vehicle.immatriculation}</td>
-          <td>${vehicle.marque}</td>
-          <td>${formatVehicleType(vehicle.type)}</td>
-          <td>${formatStatus(vehicle.statut)}</td>
-          <td><span class="localisation-status ${vehicle.localisation}">${formatLocalisation(vehicle.localisation)}</span></td>
-          <td>
-            <button class="btn btn-sm btn-outline edit-vehicle" data-id="${vehicle.id}"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-outline view-vehicle" data-id="${vehicle.id}"><i class="fas fa-eye"></i></button>
-            <button class="btn btn-sm btn-outline delete-vehicle" data-id="${vehicle.id}"><i class="fas fa-trash"></i></button>
-          </td>
-        `;
-        container.appendChild(tr);
-      });
-      
-      document.getElementById('vehicule-count').textContent = `${vehicles.length} véhicule${vehicles.length !== 1 ? 's' : ''}`;
-      
-      // Attach event listeners
-      document.querySelectorAll('.edit-vehicle').forEach(btn => {
-        btn.addEventListener('click', () => editVehicle(btn.getAttribute('data-id')));
-      });
-      
-      document.querySelectorAll('.view-vehicle').forEach(btn => {
-        btn.addEventListener('click', () => viewVehicle(btn.getAttribute('data-id')));
-      });
-      
-      document.querySelectorAll('.delete-vehicle').forEach(btn => {
-        btn.addEventListener('click', () => deleteVehicle(btn.getAttribute('data-id')));
-      });
-      
-      // Update vehicle dropdown in fuel form
-      populateVehicleDropdown();
-      populateVehicleMaintenanceDropdown();
-    }
-
-    function renderBikesList() {
-      const container = document.getElementById('liste-bikes');
-      container.innerHTML = '';
-      
-      bikes.forEach(bike => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${bike.immatriculation}</td>
-          <td>${bike.marque}</td>
-          <td>${formatBikeType(bike.type)}</td>
-          <td><span class="bike-status ${bike.statut.replace(' ', '-')}">${formatStatus(bike.statut)}</span></td>
-          <td><span class="localisation-status ${bike.localisation}">${formatLocalisation(bike.localisation)}</span></td>
-          <td>
-            <button class="btn btn-sm btn-outline edit-bike" data-id="${bike.id}"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-outline view-bike" data-id="${bike.id}"><i class="fas fa-eye"></i></button>
-            <button class="btn btn-sm btn-outline delete-bike" data-id="${bike.id}"><i class="fas fa-trash"></i></button>
-          </td>
-        `;
-        container.appendChild(tr);
-      });
-      
-      document.getElementById('bike-count').textContent = `${bikes.length} moto${bikes.length !== 1 ? 's' : ''}`;
-      
-      // Attach event listeners
-      document.querySelectorAll('.edit-bike').forEach(btn => {
-        btn.addEventListener('click', () => editBike(btn.getAttribute('data-id')));
-      });
-      
-      document.querySelectorAll('.view-bike').forEach(btn => {
-        btn.addEventListener('click', () => viewBike(btn.getAttribute('data-id')));
-      });
-      
-      document.querySelectorAll('.delete-bike').forEach(btn => {
-        btn.addEventListener('click', () => deleteBike(btn.getAttribute('data-id')));
-      });
-      
-      // Update bike dropdown in maintenance form
-      populateBikeDropdown();
-    }
-
-    function renderGeneratorsList() {
-      const container = document.getElementById('liste-generators');
-      container.innerHTML = '';
-      
-      generators.forEach(generator => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${generator.immatriculation}</td>
-          <td>${generator.marque}</td>
-          <td>${generator.puissance} kVA</td>
-          <td>${formatGeneratorType(generator.type)}</td>
-          <td>${formatStatus(generator.statut)}</td>
-          <td><span class="localisation-status ${generator.localisation}">${formatLocalisation(generator.localisation)}</span></td>
-          <td>
-            <button class="btn btn-sm btn-outline edit-generator" data-id="${generator.id}"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-outline view-generator" data-id="${generator.id}"><i class="fas fa-eye"></i></button>
-            <button class="btn btn-sm btn-outline delete-generator" data-id="${generator.id}"><i class="fas fa-trash"></i></button>
-          </td>
-        `;
-        container.appendChild(tr);
-      });
-      
-      document.getElementById('generator-count').textContent = `${generators.length} groupe${generators.length !== 1 ? 's' : ''} électrogène${generators.length !== 1 ? 's' : ''}`;
-      
-      // Attach event listeners
-      document.querySelectorAll('.edit-generator').forEach(btn => {
-        btn.addEventListener('click', () => editGenerator(btn.getAttribute('data-id')));
-      });
-      
-      document.querySelectorAll('.view-generator').forEach(btn => {
-        btn.addEventListener('click', () => viewGenerator(btn.getAttribute('data-id')));
-      });
-      
-      document.querySelectorAll('.delete-generator').forEach(btn => {
-        btn.addEventListener('click', () => deleteGenerator(btn.getAttribute('data-id')));
-      });
-      
-      // Update generator dropdown in fuel form
-      populateGeneratorDropdown();
-      populateGeneratorMaintenanceDropdown();
-    }
-
-    function renderHistory() {
-      const container = document.getElementById('historique');
-      container.innerHTML = '';
-      
-      const allHistory = [
-        ...vehicles.map(vehicle => ({
-          type: 'vehicle',
-          date: vehicle.last_updated,
-          content: `Véhicule ${vehicle.immatriculation} mis à jour - Statut: ${formatStatus(vehicle.statut)} - Localisation: ${formatLocalisation(vehicle.localisation)}`,
-          vehicle_id: vehicle.id
-        })),
-        ...fuelRecords.map(fuel => ({
-          type: 'fuel',
-          date: fuel.created_at,
-          content: `Ravitaillement de ${fuel.litres}L (${fuel.type}) pour ${getVehicleImmat(fuel.vehicle_id)} - ${fuel.km_parcouru} km parcourus - Consommation: ${fuel.consommation_100km}L/100km - Coût: ${formatCurrency(fuel.cout)}`,
-          vehicle_id: fuel.vehicle_id
-        })),
-        ...vehicleMaintenance.map(maint => ({
-          type: 'maintenance',
-          date: maint.created_at,
-          content: `Maintenance ${formatMaintenanceType(maint.type)} effectuée sur ${getVehicleImmat(maint.vehicle_id)} - Coût: ${formatCurrency(maint.cout)}`,
-          vehicle_id: maint.vehicle_id
-        }))
-      ];
-      
-      allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      const filterType = document.getElementById('filter-type').value;
-      const filteredHistory = filterType === 'all' 
-        ? allHistory 
-        : allHistory.filter(item => item.type === filterType);
-      
-      filteredHistory.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'timeline-item';
-        div.innerHTML = `
-          <div class="timeline-date">${formatDate(item.date)}</div>
-          <div class="timeline-content">${item.content}</div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function renderBikeHistory() {
-      const container = document.getElementById('bike-history');
-      container.innerHTML = '';
-      
-      const allHistory = [
-        ...bikes.map(bike => ({
-          type: 'bike',
-          date: bike.last_updated,
-          content: `Moto ${bike.immatriculation} mise à jour - Statut: ${formatStatus(bike.statut)} - Localisation: ${formatLocalisation(bike.localisation)}`,
-          bike_id: bike.id
-        })),
-        ...bikeMaintenance.map(maint => ({
-          type: 'maintenance',
-          date: maint.created_at,
-          content: `Maintenance ${formatMaintenanceType(maint.type)} effectuée sur ${getBikeImmat(maint.bike_id)} - Coût: ${formatCurrency(maint.cout)}`,
-          bike_id: maint.bike_id
-        })),
-        ...bikeFuelRecords.map(fuel => ({
-          type: 'fuel',
-          date: fuel.created_at,
-          content: `Ravitaillement de ${fuel.litres}L (${fuel.type}) pour ${getBikeImmat(fuel.bike_id)} - ${fuel.km_parcouru} km parcourus - Consommation: ${fuel.consommation_100km}L/100km - Coût: ${formatCurrency(fuel.cout)}`,
-          bike_id: fuel.bike_id
-        }))
-      ];
-      
-      allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      const filterType = document.getElementById('bike-filter-type').value;
-      const filteredHistory = filterType === 'all' 
-        ? allHistory 
-        : allHistory.filter(item => item.type === filterType);
-      
-      filteredHistory.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'timeline-item';
-        div.innerHTML = `
-          <div class="timeline-date">${formatDate(item.date)}</div>
-          <div class="timeline-content">${item.content}</div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function renderGeneratorHistory() {
-      const container = document.getElementById('generator-history');
-      container.innerHTML = '';
-      
-      const allHistory = [
-        ...generators.map(generator => ({
-          type: 'generator',
-          date: generator.last_updated,
-          content: `Groupe électrogène ${generator.immatriculation} mis à jour - Statut: ${formatStatus(generator.statut)} - Localisation: ${formatLocalisation(generator.localisation)}`,
-          generator_id: generator.id
-        })),
-        ...generatorFuelRecords.map(fuel => ({
-          type: 'fuel',
-          date: fuel.created_at,
-          content: `Ravitaillement de ${fuel.quantite_ravitailler}L pour ${getGeneratorImmat(fuel.generator_id)} - ${fuel.temps_fonctionnement} de fonctionnement - Consommation: ${fuel.quantite_consommee_heure} L/h - Coût: ${formatCurrency(fuel.cout)}`,
-          generator_id: fuel.generator_id
-        })),
-        ...generatorMaintenance.map(maint => ({
-          type: 'maintenance',
-          date: maint.created_at,
-          content: `Maintenance ${formatGeneratorMaintenanceType(maint.type)} effectuée sur ${getGeneratorImmat(maint.generator_id)} - Coût: ${formatCurrency(maint.cout)}`,
-          generator_id: maint.generator_id
-        }))
-      ];
-      
-      allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      const filterType = document.getElementById('generator-filter-type').value;
-      const filteredHistory = filterType === 'all' 
-        ? allHistory 
-        : allHistory.filter(item => item.type === filterType);
-      
-      filteredHistory.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'timeline-item';
-        div.innerHTML = `
-          <div class="timeline-date">${formatDate(item.date)}</div>
-          <div class="timeline-content">${item.content}</div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    
-    function formatVehicleType(type) {
-      const types = {
-        'voiture': 'Voiture',
-        'camion': 'Camion',
-        'bus': 'Bus',
-        'pick-up': 'Pick-up',
-        'van': 'Van',
-        'fourgonette': 'Fourgonette',
-        'autre': 'Autre'
-      };
-      return types[type] || type;
-    }
-
-    function formatBikeType(type) {
-      const types = {
-        'moto_cross': 'Moto Cross',
-        'moto_routiere': 'Moto Routière',
-        'scooter': 'Scooter',
-        'tricycle': 'Tricycle',
-        'autre': 'Autre'
-      };
-      return types[type] || type;
-    }
-
-    function formatGeneratorType(type) {
-      const types = {
-        'diesel': 'Diesel',
-        'essence': 'Essence',
-        'gaz': 'Gaz',
-        'autre': 'Autre'
-      };
-      return types[type] || type;
-    }
-
-    function formatMaintenanceType(type) {
-      const types = {
-        'entretien_kilometrique': 'Entretien kilométrique',
-        'freins': 'Freins',
-        'pneus': 'Pneus',
-        'climatisation': 'Climatisation',
-        'electrique': 'Problème électrique',
-        'moteur': 'Problème de moteur',
-        'carrosserie': 'Problème de carrosserie',
-        'suspension': 'Problème de suspension',
-        'autre': 'Autre maintenance'
-      };
-      return types[type] || type;
-    }
-
-    
-    function formatGeneratorMaintenanceType(type) {
-      const types = {
-        'entretien_preventif': 'Entretien préventif',
-        'entretien_correctif': 'Entretien correctif',
-        'changement_filtres': 'Changement des filtres',
-        'vidange_huile': 'Vidange d\'huile',
-        'nettoyage_injecteurs': 'Nettoyage injecteurs',
-        'revision_moteur': 'Révision moteur',
-        'controle_electrique': 'Contrôle électrique',
-        'changement_batterie': 'Changement batterie',
-        'autre': 'Autre maintenance'
-      };
-      return types[type] || type;
-    }
-
-    
+    // Fonction pour formater la localisation
     function formatLocalisation(localisation) {
       const localisations = {
+        'garage': 'Garage',
+        'en-circulation': 'En circulation',
+        'bureau': 'Bureau',
         'fixe': 'Fixe',
         'mobile': 'Mobile',
         'autre-site': 'Affecté à un autre site temporaire'
@@ -2445,817 +1713,994 @@
       return localisations[localisation] || localisation;
     }
 
-    function formatStatus(status) {
-      return status.charAt(0).toUpperCase() + status.slice(1);
+    // Fonction pour formater le statut
+    function formatStatut(statut) {
+      const statuts = {
+        'en service': { class: 'en-service', text: 'En service' },
+        'en panne': { class: 'en-panne', text: 'En panne' },
+        'en maintenance': { class: 'en-maintenance', text: 'En maintenance' },
+        'hors service': { class: 'en-panne', text: 'Hors service' }
+      };
+      
+      const statutInfo = statuts[statut] || { class: '', text: statut };
+      return `<span class="bike-status ${statutInfo.class}">${statutInfo.text}</span>`;
     }
 
+    // Fonction pour formater la date
     function formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-      return new Date(dateString).toLocaleDateString('fr-FR', options);
+      if (!dateString) return 'Non spécifié';
+      
+      // Si la date est déjà formatée, la retourner telle quelle
+      if (dateString.includes(' ')) {
+        const parts = dateString.split(' ');
+        if (parts.length === 3) {
+          return `${parts[0]}/${parts[1]}/${parts[2]}`;
+        }
+      }
+      return dateString;
     }
+
+    // ============================================
+    // FONCTIONS POUR LES VÉHICULES
+    // ============================================
     
-    function formatCurrency(amount) {
-      return Number(amount).toLocaleString('fr-GN', {
-        style: 'currency',
-        currency: 'GNF',
-        minimumFractionDigits: 0
-      });
-    }
-
-    function getVehicleImmat(id) {
-      const vehicle = vehicles.find(v => v.id === id);
-      return vehicle ? vehicle.immatriculation : '[Véhicule inconnu]';
-    }
-
-    function getBikeImmat(id) {
-      const bike = bikes.find(b => b.id === id);
-      return bike ? bike.immatriculation : '[Moto inconnue]';
-    }
-
-    function getGeneratorImmat(id) {
-      const generator = generators.find(g => g.id === id);
-      return generator ? generator.immatriculation : '[Groupe inconnu]';
-    }
-
-    
-    function populateVehicleDropdown() {
-      const select = document.getElementById('carburant_vehicule');
-      select.innerHTML = '<option value="">Sélectionner un véhicule...</option>';
-      
-      vehicles.forEach(vehicle => {
-        const option = document.createElement('option');
-        option.value = vehicle.id;
-        option.textContent = `${vehicle.immatriculation} - ${vehicle.marque}`;
-        select.appendChild(option);
-      });
-    }
-    
-    function populateVehicleMaintenanceDropdown() {
-      const select = document.getElementById('vehicle_maintenance_vehicule');
-      select.innerHTML = '<option value="">Sélectionner un véhicule...</option>';
-      
-      vehicles.forEach(vehicle => {
-        const option = document.createElement('option');
-        option.value = vehicle.id;
-        option.textContent = `${vehicle.immatriculation} - ${vehicle.marque}`;
-        select.appendChild(option);
-      });
-    }
-
-    function populateBikeDropdown() {
-      const maintenanceSelect = document.getElementById('maintenance_bike');
-      maintenanceSelect.innerHTML = '<option value="">Sélectionner une moto...</option>';
-      
-      const fuelSelect = document.getElementById('bike_carburant_moto');
-      fuelSelect.innerHTML = '<option value="">Sélectionner une moto...</option>';
-      
-      bikes.forEach(bike => {
-        const maintenanceOption = document.createElement('option');
-        maintenanceOption.value = bike.id;
-        maintenanceOption.textContent = `${bike.immatriculation} - ${bike.marque}`;
-        maintenanceSelect.appendChild(maintenanceOption);
+    // Récupérer tous les véhicules
+    async function getVehicles() {
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select('*')
+          .order('created_at', { ascending: false });
         
-        const fuelOption = document.createElement('option');
-        fuelOption.value = bike.id;
-        fuelOption.textContent = `${bike.immatriculation} - ${bike.marque}`;
-        fuelSelect.appendChild(fuelOption);
-      });
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Erreur lors de la récupération des véhicules:', error);
+        showToast('Erreur lors de la récupération des véhicules', 'error');
+        return [];
+      }
     }
 
-    function populateGeneratorDropdown() {
-      const select = document.getElementById('generator_carburant_groupe');
-      select.innerHTML = '<option value="">Sélectionner un groupe...</option>';
-      
-      generators.forEach(generator => {
-        const option = document.createElement('option');
-        option.value = generator.id;
-        option.textContent = `${generator.immatriculation} - ${generator.marque}`;
-        select.appendChild(option);
-      });
+    // Ajouter un véhicule
+    async function addVehicle(vehicleData) {
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .insert([vehicleData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Véhicule ajouté avec succès', 'success');
+        renderVehiclesList();
+        clearForm();
+        addToHistory('vehicle', 'Ajout', `Véhicule ${vehicleData.immatriculation} ajouté`);
+        return data[0];
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout du véhicule:', error);
+        showToast('Erreur lors de l\'ajout du véhicule', 'error');
+        return null;
+      }
     }
 
-    
-    function populateGeneratorMaintenanceDropdown() {
-      const select = document.getElementById('generator_maintenance_groupe');
-      select.innerHTML = '<option value="">Sélectionner un groupe...</option>';
-      
-      generators.forEach(generator => {
-        const option = document.createElement('option');
-        option.value = generator.id;
-        option.textContent = `${generator.immatriculation} - ${generator.marque}`;
-        select.appendChild(option);
-      });
+    // Mettre à jour un véhicule
+    async function updateVehicle(id, vehicleData) {
+      try {
+        const { error } = await supabase
+          .from('vehicles')
+          .update(vehicleData)
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Véhicule mis à jour avec succès', 'success');
+        renderVehiclesList();
+        clearForm();
+        addToHistory('vehicle', 'Modification', `Véhicule ${vehicleData.immatriculation} modifié`);
+        editingVehicleId = null;
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du véhicule:', error);
+        showToast('Erreur lors de la mise à jour du véhicule', 'error');
+      }
     }
 
-    
-    function editVehicle(id) {
-      const vehicle = vehicles.find(v => v.id === id);
-      if (!vehicle) return;
+    // Supprimer un véhicule
+    async function deleteVehicle(id) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer ce véhicule?')) return;
       
-      document.getElementById('immatriculation').value = vehicle.immatriculation;
-      document.getElementById('marque').value = vehicle.marque;
-      document.getElementById('type').value = vehicle.type;
-      
-      document.getElementById('date_circulation').value = formatForDisplay(vehicle.date_circulation);
-      document.getElementById('statut').value = vehicle.statut;
-      document.getElementById('localisation').value = vehicle.localisation;
-      document.getElementById('chauffeur').value = vehicle.chauffeur;
-      document.getElementById('observations').value = vehicle.observations;
-      document.getElementById('departement').value = vehicle.departement || '';
-      document.getElementById('destination').value = vehicle.destination || '';
-      document.getElementById('motif_deplacement').value = vehicle.motif_deplacement || '';
-      document.getElementById('km_avant').value = vehicle.km_avant || '';
-      document.getElementById('km_apres').value = vehicle.km_apres || '';
-      document.getElementById('km_parcouru').value = vehicle.km_parcouru || '';
-      
-      document.getElementById('vehicule-form').setAttribute('data-edit-id', vehicle.id);
-      document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+      try {
+        // Récupérer les informations du véhicule avant suppression
+        const { data: vehicle } = await supabase
+          .from('vehicles')
+          .select('immatriculation')
+          .eq('id', id)
+          .single();
+        
+        const { error } = await supabase
+          .from('vehicles')
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Véhicule supprimé avec succès', 'success');
+        renderVehiclesList();
+        if (vehicle) {
+          addToHistory('vehicle', 'Suppression', `Véhicule ${vehicle.immatriculation} supprimé`);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression du véhicule:', error);
+        showToast('Erreur lors de la suppression du véhicule', 'error');
+      }
     }
 
-    function viewVehicle(id) {
-      const vehicle = vehicles.find(v => v.id === id);
-      if (!vehicle) return;
+    // Afficher la liste des véhicules
+    async function renderVehiclesList() {
+      const vehicles = await getVehicles();
+      const searchTerm = document.getElementById('search-vehicule').value.toLowerCase();
+      const tbody = document.getElementById('liste-vehicules');
+      const countElement = document.getElementById('vehicule-count');
       
-      const fuelRecordsForVehicle = fuelRecords.filter(f => f.vehicle_id === id);
-      const maintenanceRecords = vehicleMaintenance.filter(m => m.vehicle_id === id);
+      // Filtrer les véhicules
+      const filteredVehicles = vehicles.filter(vehicle => 
+        vehicle.immatriculation.toLowerCase().includes(searchTerm) ||
+        vehicle.marque.toLowerCase().includes(searchTerm) ||
+        vehicle.type.toLowerCase().includes(searchTerm)
+      );
       
-      document.getElementById('modal-title').textContent = `Détails: ${vehicle.immatriculation}`;
+      // Pagination
+      const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+      const startIndex = (currentVehiclePage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedVehicles = filteredVehicles.slice(startIndex, endIndex);
       
-      const formattedDate = formatToFrenchDate(vehicle.date_circulation);
+      // Mettre à jour les informations de pagination
+      document.getElementById('prev-page').disabled = currentVehiclePage <= 1;
+      document.getElementById('next-page').disabled = currentVehiclePage >= totalPages;
+      document.getElementById('page-info').textContent = `Page ${currentVehiclePage} sur ${totalPages}`;
       
-      let html = `
-        <div class="vehicle-details-grid">
+      // Générer le HTML
+      let html = '';
+      
+      if (paginatedVehicles.length === 0) {
+        html = `<tr><td colspan="6" class="text-center">Aucun véhicule trouvé</td></tr>`;
+      } else {
+        paginatedVehicles.forEach(vehicle => {
+          html += `
+            <tr>
+              <td>${vehicle.immatriculation}</td>
+              <td>${vehicle.marque}</td>
+              <td>${vehicle.type}</td>
+              <td>${formatStatut(vehicle.statut)}</td>
+              <td><span class="localisation-status ${vehicle.localisation}">${formatLocalisation(vehicle.localisation)}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline" onclick="editVehicle('${vehicle.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="viewVehicleDetails('${vehicle.id}')">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="deleteVehicle('${vehicle.id}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      
+      tbody.innerHTML = html;
+      countElement.textContent = `${filteredVehicles.length} véhicule(s)`;
+      
+      // Mettre à jour les dropdowns
+      populateVehicleDropdown();
+    }
+
+    // Modifier un véhicule
+    async function editVehicle(id) {
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
+        
+        // Remplir le formulaire
+        document.getElementById('immatriculation').value = data.immatriculation || '';
+        document.getElementById('marque').value = data.marque || '';
+        document.getElementById('type').value = data.type || '';
+        document.getElementById('date_circulation').value = data.date_circulation || '';
+        document.getElementById('statut').value = data.statut || 'en service';
+        document.getElementById('localisation').value = data.localisation || 'garage';
+        document.getElementById('chauffeur').value = data.chauffeur || '';
+        document.getElementById('observations').value = data.observations || '';
+        document.getElementById('departement').value = data.departement || '';
+        document.getElementById('destination').value = data.destination || '';
+        document.getElementById('motif_deplacement').value = data.motif_deplacement || '';
+        document.getElementById('km_avant').value = data.km_avant || '';
+        document.getElementById('km_apres').value = data.km_apres || '';
+        document.getElementById('km_parcouru').value = data.km_parcouru || '';
+        
+        // Marquer comme édition
+        editingVehicleId = id;
+        document.getElementById('vehicule-form').dataset.editingId = id;
+        document.getElementById('clear-form').textContent = 'Annuler édition';
+        
+        // Faire défiler vers le formulaire
+        document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+        
+      } catch (error) {
+        console.error('Erreur lors de la récupération du véhicule:', error);
+        showToast('Erreur lors de la récupération du véhicule', 'error');
+      }
+    }
+
+    // Voir les détails d'un véhicule
+    async function viewVehicleDetails(id) {
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
+        
+        // Générer le HTML des détails
+        let html = `
+          <div class="detail-item">
+            <span class="detail-label">Immatriculation:</span>
+            <span class="detail-value">${data.immatriculation}</span>
+          </div>
           <div class="detail-item">
             <span class="detail-label">Marque/Modèle:</span>
-            <span class="detail-value">${vehicle.marque}</span>
+            <span class="detail-value">${data.marque}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Type:</span>
-            <span class="detail-value">${formatVehicleType(vehicle.type)}</span>
+            <span class="detail-value">${data.type}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Mise en circulation:</span>
-            <span class="detail-value">${formattedDate}</span>
+            <span class="detail-label">Date de mise en circulation:</span>
+            <span class="detail-value">${formatDate(data.date_circulation)}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Statut:</span>
-            <span class="detail-value">${formatStatus(vehicle.statut)}</span>
+            <span class="detail-value">${formatStatut(data.statut)}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Localisation:</span>
-            <span class="detail-value localisation-status ${vehicle.localisation}">${formatLocalisation(vehicle.localisation)}</span>
+            <span class="detail-value">${formatLocalisation(data.localisation)}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Facteur:</span>
-            <span class="detail-value">${vehicle.chauffeur || 'Non assigné'}</span>
+            <span class="detail-label">Facteur assigné:</span>
+            <span class="detail-value">${data.chauffeur || 'Non assigné'}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Département:</span>
-            <span class="detail-value">${vehicle.departement || 'Non spécifié'}</span>
+            <span class="detail-value">${data.departement || 'Non spécifié'}</span>
           </div>
-          <div class="detail-item full-width">
-            <span class="detail-label">Observations:</span>
-            <span class="detail-value">${vehicle.observations || 'Aucune'}</span>
+          <div class="detail-item">
+            <span class="detail-label">Destination:</span>
+            <span class="detail-value">${data.destination || 'Non spécifiée'}</span>
           </div>
-        </div>
-      `;
-      
-      
-      if (vehicle.destination) {
-        html += `
-          <h4 class="maintenance-title">Détails du Déplacement</h4>
-          <div class="maintenance-item">
-            <div class="maintenance-header">
-              <span class="maintenance-type">Destination: ${vehicle.destination}</span>
-              <span class="maintenance-date">Motif: ${vehicle.motif_deplacement || 'Non spécifié'}</span>
+          <div class="detail-item">
+            <span class="detail-label">Motif du déplacement:</span>
+            <span class="detail-value">${data.motif_deplacement || 'Non spécifié'}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Kilométrage parcouru:</span>
+            <span class="detail-value">${data.km_parcouru || 0} km</span>
+          </div>
+        `;
+        
+        if (data.observations) {
+          html += `
+            <div class="detail-item">
+              <span class="detail-label">Observations:</span>
+              <span class="detail-value">${data.observations}</span>
             </div>
-            <div class="maintenance-cost">Kilométrage départ: ${vehicle.km_avant || 'N/A'} km</div>
-            <div class="maintenance-cost">Kilométrage arrivée: ${vehicle.km_apres || 'N/A'} km</div>
-            <div class="maintenance-cost">Distance parcourue: ${vehicle.km_parcouru || 'N/A'} km</div>
-          </div>
-        `;
-      }
-      
-      if (fuelRecordsForVehicle.length > 0) {
-        html += `
-          <h4 class="fuel-title">Historique de ravitaillement</h4>
-          <div class="fuel-list">
-            ${fuelRecordsForVehicle.map(fuel => `
-              <div class="fuel-item">
-                <div class="fuel-header">
-                  <span class="fuel-type">${fuel.type}</span>
-                  <span class="fuel-date">${formatDate(fuel.date)}</span>
-                </div>
-                <div class="fuel-quantity">Quantité: ${fuel.litres}L</div>
-                <div class="fuel-cost">Distance: ${fuel.km_parcouru} km</div>
-                <div class="fuel-cost">Consommation: ${fuel.consommation_100km}L/100km</div>
-                <div class="fuel-cost">Coût: ${formatCurrency(fuel.cout)}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      if (maintenanceRecords.length > 0) {
-        html += `
-          <h4 class="maintenance-title">Historique de maintenance</h4>
-          <div class="maintenance-list">
-            ${maintenanceRecords.map(maint => `
-              <div class="maintenance-item">
-                <div class="maintenance-header">
-                  <span class="maintenance-type">${formatMaintenanceType(maint.type)}</span>
-                  <span class="maintenance-date">${formatDate(maint.date)}</span>
-                </div>
-                <div class="maintenance-cost">Coût: ${formatCurrency(maint.cout)}</div>
-                <div class="maintenance-description">${maint.description || 'Aucune description'}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      document.getElementById('vehicle-details').innerHTML = html;
-      document.getElementById('vehicle-modal').classList.add('show');
-    }
-
-    function deleteVehicle(id) {
-      if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est irréversible.')) {
-        vehicles = vehicles.filter(v => v.id !== id);
-        fuelRecords = fuelRecords.filter(f => f.vehicle_id !== id);
-        vehicleMaintenance = vehicleMaintenance.filter(m => m.vehicle_id !== id);
-        saveVehicles();
-        saveFuelRecords();
-        saveVehicleMaintenance();
-        renderVehiclesList();
-        renderHistory();
-        showToast('Véhicule supprimé avec succès', 'success');
+          `;
+        }
+        
+        document.getElementById('vehicle-details').innerHTML = html;
+        document.getElementById('modal-title').textContent = `Détails - ${data.immatriculation}`;
+        document.getElementById('vehicle-modal').classList.add('show');
+        
+      } catch (error) {
+        console.error('Erreur lors de la récupération des détails:', error);
+        showToast('Erreur lors de la récupération des détails', 'error');
       }
     }
 
+    // Vider le formulaire véhicule
+    function clearForm() {
+      document.getElementById('vehicule-form').reset();
+      editingVehicleId = null;
+      delete document.getElementById('vehicule-form').dataset.editingId;
+      document.getElementById('clear-form').textContent = 'Nouveau';
+      document.getElementById('km_parcouru').value = '';
+    }
+
+    // Remplir les dropdowns des véhicules
+    async function populateVehicleDropdown() {
+      const vehicles = await getVehicles();
+      const carburantDropdown = document.getElementById('carburant_vehicule');
+      const maintenanceDropdown = document.getElementById('vehicle_maintenance_vehicule');
+      
+      let carburantOptions = '<option value="">Sélectionner un véhicule...</option>';
+      let maintenanceOptions = '<option value="">Sélectionner un véhicule...</option>';
+      
+      vehicles.forEach(vehicle => {
+        carburantOptions += `<option value="${vehicle.id}">${vehicle.immatriculation} - ${vehicle.marque}</option>`;
+        maintenanceOptions += `<option value="${vehicle.id}">${vehicle.immatriculation} - ${vehicle.marque}</option>`;
+      });
+      
+      carburantDropdown.innerHTML = carburantOptions;
+      maintenanceDropdown.innerHTML = maintenanceOptions;
+    }
+
+    // ============================================
+    // FONCTIONS POUR LES MOTOS
+    // ============================================
     
-    function editBike(id) {
-      const bike = bikes.find(b => b.id === id);
-      if (!bike) return;
-      
-      document.getElementById('bike_immatriculation').value = bike.immatriculation;
-      document.getElementById('bike_marque').value = bike.marque;
-      document.getElementById('bike_type').value = bike.type;
-    
-      document.getElementById('bike_date_circulation').value = formatForDisplay(bike.date_circulation);
-      document.getElementById('bike_statut').value = bike.statut;
-      document.getElementById('bike_localisation').value = bike.localisation;
-      document.getElementById('bike_chauffeur').value = bike.chauffeur;
-      document.getElementById('bike_observations').value = bike.observations;
-      
-      document.getElementById('bike-form').setAttribute('data-edit-id', bike.id);
-      document.getElementById('bike-form-section').scrollIntoView({ behavior: 'smooth' });
+    // Récupérer toutes les motos
+    async function getBikes() {
+      try {
+        const { data, error } = await supabase
+          .from('motos')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Erreur lors de la récupération des motos:', error);
+        showToast('Erreur lors de la récupération des motos', 'error');
+        return [];
+      }
     }
 
-    function viewBike(id) {
-      const bike = bikes.find(b => b.id === id);
-      if (!bike) return;
-      
-      const maintenanceRecords = bikeMaintenance.filter(m => m.bike_id === id);
-      const fuelRecordsForBike = bikeFuelRecords.filter(f => f.bike_id === id);
-      
-      document.getElementById('bike-modal-title').textContent = `Détails: ${bike.immatriculation}`;
-      
-      const formattedDate = formatToFrenchDate(bike.date_circulation);
-      
-      let html = `
-        <div class="bike-details-grid">
-          <div class="detail-item">
-            <span class="detail-label">Marque/Modèle:</span>
-            <span class="detail-value">${bike.marque}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Type:</span>
-            <span class="detail-value">${formatBikeType(bike.type)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Mise en circulation:</span>
-            <span class="detail-value">${formattedDate}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Statut:</span>
-            <span class="detail-value bike-status ${bike.statut.replace(' ', '-')}">${formatStatus(bike.statut)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Localisation:</span>
-            <span class="detail-value localisation-status ${bike.localisation}">${formatLocalisation(bike.localisation)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Facteur:</span>
-            <span class="detail-value">${bike.chauffeur || 'Non assigné'}</span>
-          </div>
-          <div class="detail-item full-width">
-            <span class="detail-label">Observations:</span>
-            <span class="detail-value">${bike.observations || 'Aucune'}</span>
-          </div>
-        </div>
-      `;
-      
-      if (fuelRecordsForBike.length > 0) {
-        html += `
-          <h4 class="fuel-title">Historique de ravitaillement</h4>
-          <div class="fuel-list">
-            ${fuelRecordsForBike.map(fuel => `
-              <div class="fuel-item">
-                <div class="fuel-header">
-                  <span class="fuel-type">${fuel.type}</span>
-                  <span class="fuel-date">${formatDate(fuel.date)}</span>
-                </div>
-                <div class="fuel-quantity">Quantité: ${fuel.litres}L</div>
-                <div class="fuel-cost">Distance: ${fuel.km_parcouru} km</div>
-                <div class="fuel-cost">Consommation: ${fuel.consommation_100km}L/100km</div>
-                <div class="fuel-cost">Coût: ${formatCurrency(fuel.cout)}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      if (maintenanceRecords.length > 0) {
-        html += `
-          <h4 class="maintenance-title">Historique de maintenance</h4>
-          <div class="maintenance-list">
-            ${maintenanceRecords.map(maint => `
-              <div class="maintenance-item">
-                <div class="maintenance-header">
-                  <span class="maintenance-type">${formatMaintenanceType(maint.type)}</span>
-                  <span class="maintenance-date">${formatDate(maint.date)}</span>
-                </div>
-                <div class="maintenance-cost">Coût: ${formatCurrency(maint.cout)}</div>
-                <div class="maintenance-description">${maint.description || 'Aucune description'}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      document.getElementById('bike-details').innerHTML = html;
-      document.getElementById('bike-modal').classList.add('show');
-    }
-
-    function deleteBike(id) {
-      if (confirm('Êtes-vous sûr de vouloir supprimer cette moto ? Cette action est irréversible.')) {
-        bikes = bikes.filter(b => b.id !== id);
-        bikeMaintenance = bikeMaintenance.filter(m => m.bike_id !== id);
-        bikeFuelRecords = bikeFuelRecords.filter(f => f.bike_id !== id);
-        saveBikes();
-        saveBikeMaintenance();
-        saveBikeFuelRecords();
+    // Ajouter une moto
+    async function addBike(bikeData) {
+      try {
+        const { data, error } = await supabase
+          .from('motos')
+          .insert([bikeData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Moto ajoutée avec succès', 'success');
         renderBikesList();
-        renderBikeHistory();
-        showToast('Moto supprimée avec succès', 'success');
+        clearBikeForm();
+        addToHistory('bike', 'Ajout', `Moto ${bikeData.immatriculation} ajoutée`);
+        return data[0];
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout de la moto:', error);
+        showToast('Erreur lors de l\'ajout de la moto', 'error');
+        return null;
       }
     }
 
-    
-    function editGenerator(id) {
-      const generator = generators.find(g => g.id === id);
-      if (!generator) return;
-      
-      document.getElementById('generator_immatriculation').value = generator.immatriculation;
-      document.getElementById('generator_marque').value = generator.marque;
-      document.getElementById('generator_type').value = generator.type;
-      document.getElementById('generator_puissance').value = generator.puissance;
-      
-      document.getElementById('generator_date_mise_service').value = formatForDisplay(generator.date_mise_service);
-      document.getElementById('generator_statut').value = generator.statut;
-      document.getElementById('generator_localisation').value = generator.localisation;
-      document.getElementById('generator_observations').value = generator.observations;
-      
-      document.getElementById('generator-form').setAttribute('data-edit-id', generator.id);
-      document.getElementById('generator-form-section').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function viewGenerator(id) {
-      const generator = generators.find(g => g.id === id);
-      if (!generator) return;
-      
-      const fuelRecordsForGenerator = generatorFuelRecords.filter(f => f.generator_id === id);
-      const maintenanceRecords = generatorMaintenance.filter(m => m.generator_id === id);
-      
-      document.getElementById('generator-modal-title').textContent = `Détails: ${generator.immatriculation}`;
-      
-      
-      const formattedDate = formatToFrenchDate(generator.date_mise_service);
-      
-      let html = `
-        <div class="generator-details-grid">
-          <div class="detail-item">
-            <span class="detail-label">Marque/Modèle:</span>
-            <span class="detail-value">${generator.marque}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Type:</span>
-            <span class="detail-value">${formatGeneratorType(generator.type)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Puissance:</span>
-            <span class="detail-value">${generator.puissance} kVA</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Mise en service:</span>
-            <span class="detail-value">${formattedDate}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Statut:</span>
-            <span class="detail-value">${formatStatus(generator.statut)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Localisation:</span>
-            <span class="detail-value localisation-status ${generator.localisation}">${formatLocalisation(generator.localisation)}</span>
-          </div>
-          <div class="detail-item full-width">
-            <span class="detail-label">Observations:</span>
-            <span class="detail-value">${generator.observations || 'Aucune'}</span>
-          </div>
-        </div>
-      `;
-      
-      if (fuelRecordsForGenerator.length > 0) {
-        html += `
-          <h4 class="fuel-title">Historique de ravitaillement</h4>
-          <div class="fuel-list">
-            ${fuelRecordsForGenerator.map(fuel => `
-              <div class="fuel-item">
-                <div class="fuel-header">
-                  <span class="fuel-date">${formatDate(fuel.date)} - Marche: ${fuel.heure_marche} - Arrêt: ${fuel.heure_arret}</span>
-                </div>
-                <div class="fuel-quantity">Quantité ravitaillée: ${fuel.quantite_ravitailler}L</div>
-                <div class="fuel-cost">Temps fonctionnement: ${fuel.temps_fonctionnement}</div>
-                <div class="fuel-cost">Consommation: ${fuel.quantite_consommee_heure} L/h</div>
-                <div class="fuel-cost">Coût: ${formatCurrency(fuel.cout)}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      if (maintenanceRecords.length > 0) {
-        html += `
-          <h4 class="maintenance-title">Historique de maintenance</h4>
-          <div class="maintenance-list">
-            ${maintenanceRecords.map(maint => `
-              <div class="maintenance-item">
-                <div class="maintenance-header">
-                  <span class="maintenance-type">${formatGeneratorMaintenanceType(maint.type)}</span>
-                  <span class="maintenance-date">${formatDate(maint.date)}</span>
-                </div>
-                <div class="maintenance-cost">Coût: ${formatCurrency(maint.cout)}</div>
-                <div class="maintenance-description">${maint.description || 'Aucune description'}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      document.getElementById('generator-details').innerHTML = html;
-      document.getElementById('generator-modal').classList.add('show');
-    }
-
-    function deleteGenerator(id) {
-      if (confirm('Êtes-vous sûr de vouloir supprimer ce groupe électrogène ? Cette action est irréversible.')) {
-        generators = generators.filter(g => g.id !== id);
-        generatorFuelRecords = generatorFuelRecords.filter(f => f.generator_id !== id);
-        generatorMaintenance = generatorMaintenance.filter(m => m.generator_id !== id);
-        saveGenerators();
-        saveGeneratorFuelRecords();
-        saveGeneratorMaintenance();
-        renderGeneratorsList();
-        renderGeneratorHistory();
-        showToast('Groupe électrogène supprimé avec succès', 'success');
-      }
-    }
-
-
-    function closeModal() {
-      document.querySelectorAll('.modal').forEach(modal => {
-        modal.classList.remove('show');
-      });
-    }
-
-    document.querySelectorAll('.close-modal').forEach(btn => {
-      btn.addEventListener('click', closeModal);
-    });
-
-    document.querySelectorAll('.modal').forEach(modal => {
-      modal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-      });
-    });
-
-    function showToast(message, type = 'info') {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = `toast show ${type}`;
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
-    }
-
-  
-    document.getElementById('search-vehicule').addEventListener('input', function() {
-      const searchTerm = this.value.toLowerCase();
-      const rows = document.querySelectorAll('#vehicules-table tbody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
-
-    document.getElementById('search-bike').addEventListener('input', function() {
-      const searchTerm = this.value.toLowerCase();
-      const rows = document.querySelectorAll('#bikes-table tbody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
-
-    document.getElementById('search-generator').addEventListener('input', function() {
-      const searchTerm = this.value.toLowerCase();
-      const rows = document.querySelectorAll('#generators-table tbody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
-
-  
-    document.getElementById('filter-type').addEventListener('change', renderHistory);
-    document.getElementById('bike-filter-type').addEventListener('change', renderBikeHistory);
-    document.getElementById('generator-filter-type').addEventListener('change', renderGeneratorHistory);
-
-  
-    function setupAutoCalculations() {
-      
-      document.getElementById('carburant_km_depart').addEventListener('input', calculateVehicleFuel);
-      document.getElementById('carburant_km_arrivee').addEventListener('input', calculateVehicleFuel);
-      document.getElementById('carburant_litres').addEventListener('input', calculateVehicleFuel);
-      document.getElementById('carburant_prix_unitaire').addEventListener('input', calculateVehicleFuel);
-      
-    
-      document.getElementById('bike_carburant_km_depart').addEventListener('input', calculateBikeFuel);
-      document.getElementById('bike_carburant_km_arrivee').addEventListener('input', calculateBikeFuel);
-      document.getElementById('bike_carburant_litres').addEventListener('input', calculateBikeFuel);
-      document.getElementById('bike_carburant_prix_unitaire').addEventListener('input', calculateBikeFuel);
-      
-      
-      document.getElementById('generator_carburant_quantite_ravitailler').addEventListener('input', calculateGeneratorFuel);
-      document.getElementById('generator_carburant_prix_unitaire').addEventListener('input', calculateGeneratorFuel);
-      
-    
-      document.getElementById('km_avant').addEventListener('input', calculateKilometrageParcouru);
-      document.getElementById('km_apres').addEventListener('input', calculateKilometrageParcouru);
-
-      // Ajout des écouteurs pour le calcul automatique du temps de fonctionnement
-      document.getElementById('generator_carburant_heure_marche').addEventListener('change', updateTempsFonctionnement);
-      document.getElementById('generator_carburant_heure_arret').addEventListener('change', updateTempsFonctionnement);
-    }
-
-    
-    function calculateKilometrageParcouru() {
-      const kmAvant = parseFloat(document.getElementById('km_avant').value) || 0;
-      const kmApres = parseFloat(document.getElementById('km_apres').value) || 0;
-      
-      const kmParcouru = kmApres - kmAvant;
-      
-      document.getElementById('km_parcouru').value = kmParcouru > 0 ? kmParcouru : '';
-    }
-
-    function calculateVehicleFuel() {
-      const kmDepart = parseFloat(document.getElementById('carburant_km_depart').value) || 0;
-      const kmArrivee = parseFloat(document.getElementById('carburant_km_arrivee').value) || 0;
-      const litres = parseFloat(document.getElementById('carburant_litres').value) || 0;
-      const prixUnitaire = parseFloat(document.getElementById('carburant_prix_unitaire').value) || 0;
-      
-      const kmParcouru = kmArrivee - kmDepart;
-      const coutTotal = litres * prixUnitaire;
-      
-      document.getElementById('carburant_km_parcouru').value = kmParcouru > 0 ? kmParcouru : '';
-      document.getElementById('carburant_cout').value = coutTotal > 0 ? coutTotal.toFixed(2) : '';
-    }
-
-    function calculateBikeFuel() {
-      const kmDepart = parseFloat(document.getElementById('bike_carburant_km_depart').value) || 0;
-      const kmArrivee = parseFloat(document.getElementById('bike_carburant_km_arrivee').value) || 0;
-      const litres = parseFloat(document.getElementById('bike_carburant_litres').value) || 0;
-      const prixUnitaire = parseFloat(document.getElementById('bike_carburant_prix_unitaire').value) || 0;
-      
-      const kmParcouru = kmArrivee - kmDepart;
-      const coutTotal = litres * prixUnitaire;
-      
-      document.getElementById('bike_carburant_km_parcouru').value = kmParcouru > 0 ? kmParcouru : '';
-      document.getElementById('bike_carburant_cout').value = coutTotal > 0 ? coutTotal.toFixed(2) : '';
-    }
-
-    
-    function calculateGeneratorFuel() {
-      const quantiteRavitailler = parseFloat(document.getElementById('generator_carburant_quantite_ravitailler').value) || 0;
-      const prixUnitaire = parseFloat(document.getElementById('generator_carburant_prix_unitaire').value) || 0;
-      
-      const coutTotal = quantiteRavitailler * prixUnitaire;
-      
-      document.getElementById('generator_carburant_cout').value = coutTotal > 0 ? coutTotal.toFixed(2) : '';
-    }
-
-    document.getElementById('export-excel').addEventListener('click', function() {
-      
-      const wb = XLSX.utils.book_new();
-      
-      
-      const vehicleData = vehicles.map(v => ({
-        'Immatriculation': v.immatriculation,
-        'Marque/Modèle': v.marque,
-        'Type': formatVehicleType(v.type),
-        'Date circulation': formatToFrenchDate(v.date_circulation),
-        'Statut': formatStatus(v.statut),
-        'Localisation': formatLocalisation(v.localisation),
-        'Facteur': v.chauffeur || '',
-        'Département': v.departement || '',
-        'Destination': v.destination || '',
-        'Motif déplacement': v.motif_deplacement || '',
-        'Km départ': v.km_avant || '',
-        'Km arrivée': v.km_apres || '',
-        'Km parcouru': v.km_parcouru || '',
-        'Observations': v.observations || ''
-      }));
-      
-      const vehicleWS = XLSX.utils.json_to_sheet(vehicleData);
-      XLSX.utils.book_append_sheet(wb, vehicleWS, "Véhicules");
-      
-      
-      const bikeData = bikes.map(b => ({
-        'Immatriculation': b.immatriculation,
-        'Marque/Modèle': b.marque,
-        'Type': formatBikeType(b.type),
-        'Date circulation': formatToFrenchDate(b.date_circulation),
-        'Statut': formatStatus(b.statut),
-        'Localisation': formatLocalisation(b.localisation),
-        'Facteur': b.chauffeur || '',
-        'Observations': b.observations || ''
-      }));
-      
-      const bikeWS = XLSX.utils.json_to_sheet(bikeData);
-      XLSX.utils.book_append_sheet(wb, bikeWS, "Motos");
-      
-      
-      const generatorData = generators.map(g => ({
-        'N° Inventaire': g.immatriculation,
-        'Marque/Modèle': g.marque,
-        'Type': formatGeneratorType(g.type),
-        'Puissance (kVA)': g.puissance,
-        'Date mise service': formatToFrenchDate(g.date_mise_service),
-        'Statut': formatStatus(g.statut),
-        'Localisation': formatLocalisation(g.localisation),
-        'Observations': g.observations || ''
-      }));
-      
-      const generatorWS = XLSX.utils.json_to_sheet(generatorData);
-      XLSX.utils.book_append_sheet(wb, generatorWS, "Groupes Électrogènes");
-      
-      
-      if (vehicleMaintenance.length > 0) {
-        const vehicleMaintenanceData = vehicleMaintenance.map(m => {
-          const vehicle = vehicles.find(v => v.id === m.vehicle_id) || {};
-          return {
-            'Véhicule': vehicle.immatriculation || 'Inconnu',
-            'Date': formatToFrenchDate(m.date),
-            'Type': formatMaintenanceType(m.type),
-            'Coût': m.cout,
-            'Description': m.description || ''
-          };
-        });
+    // Mettre à jour une moto
+    async function updateBike(id, bikeData) {
+      try {
+        const { error } = await supabase
+          .from('motos')
+          .update(bikeData)
+          .eq('id', id);
         
-        const vehicleMaintenanceWS = XLSX.utils.json_to_sheet(vehicleMaintenanceData);
-        XLSX.utils.book_append_sheet(wb, vehicleMaintenanceWS, "Maintenance Véhicules");
+        if (error) throw error;
+        
+        showToast('Moto mise à jour avec succès', 'success');
+        renderBikesList();
+        clearBikeForm();
+        addToHistory('bike', 'Modification', `Moto ${bikeData.immatriculation} modifiée`);
+        editingBikeId = null;
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour de la moto:', error);
+        showToast('Erreur lors de la mise à jour de la moto', 'error');
       }
-      
+    }
 
-      if (bikeMaintenance.length > 0) {
-        const bikeMaintenanceData = bikeMaintenance.map(m => {
-          const bike = bikes.find(b => b.id === m.bike_id) || {};
-          return {
-            'Moto': bike.immatriculation || 'Inconnu',
-            'Date': formatToFrenchDate(m.date),
-            'Type': formatMaintenanceType(m.type),
-            'Coût': m.cout,
-            'Description': m.description || ''
-          };
+    // Afficher la liste des motos
+    async function renderBikesList() {
+      const bikes = await getBikes();
+      const searchTerm = document.getElementById('search-bike').value.toLowerCase();
+      const tbody = document.getElementById('liste-bikes');
+      const countElement = document.getElementById('bike-count');
+      
+      // Filtrer les motos
+      const filteredBikes = bikes.filter(bike => 
+        bike.immatriculation.toLowerCase().includes(searchTerm) ||
+        bike.marque.toLowerCase().includes(searchTerm) ||
+        bike.type.toLowerCase().includes(searchTerm)
+      );
+      
+      // Pagination
+      const totalPages = Math.ceil(filteredBikes.length / itemsPerPage);
+      const startIndex = (currentBikePage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedBikes = filteredBikes.slice(startIndex, endIndex);
+      
+      // Mettre à jour les informations de pagination
+      document.getElementById('prev-bike-page').disabled = currentBikePage <= 1;
+      document.getElementById('next-bike-page').disabled = currentBikePage >= totalPages;
+      document.getElementById('bike-page-info').textContent = `Page ${currentBikePage} sur ${totalPages}`;
+      
+      // Générer le HTML
+      let html = '';
+      
+      if (paginatedBikes.length === 0) {
+        html = `<tr><td colspan="6" class="text-center">Aucune moto trouvée</td></tr>`;
+      } else {
+        paginatedBikes.forEach(bike => {
+          html += `
+            <tr>
+              <td>${bike.immatriculation}</td>
+              <td>${bike.marque}</td>
+              <td>${bike.type}</td>
+              <td>${formatStatut(bike.statut)}</td>
+              <td><span class="localisation-status ${bike.localisation}">${formatLocalisation(bike.localisation)}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline" onclick="editBike('${bike.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="viewBikeDetails('${bike.id}')">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="deleteBike('${bike.id}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
         });
-        
-        const bikeMaintenanceWS = XLSX.utils.json_to_sheet(bikeMaintenanceData);
-        XLSX.utils.book_append_sheet(wb, bikeMaintenanceWS, "Maintenance Motos");
       }
       
+      tbody.innerHTML = html;
+      countElement.textContent = `${filteredBikes.length} moto(s)`;
       
-      if (generatorMaintenance.length > 0) {
-        const generatorMaintenanceData = generatorMaintenance.map(m => {
-          const generator = generators.find(g => g.id === m.generator_id) || {};
-          return {
-            'Groupe': generator.immatriculation || 'Inconnu',
-            'Date': formatToFrenchDate(m.date),
-            'Type': formatGeneratorMaintenanceType(m.type),
-            'Coût': m.cout,
-            'Description': m.description || ''
-          };
-        });
-        
-        const generatorMaintenanceWS = XLSX.utils.json_to_sheet(generatorMaintenanceData);
-        XLSX.utils.book_append_sheet(wb, generatorMaintenanceWS, "Maintenance Groupes");
-      }
-      
-      
-      if (fuelRecords.length > 0) {
-        const vehicleFuelData = fuelRecords.map(f => {
-          const vehicle = vehicles.find(v => v.id === f.vehicle_id) || {};
-          return {
-            'Véhicule': vehicle.immatriculation || 'Inconnu',
-            'Date': formatToFrenchDate(f.date),
-            'Km départ': f.km_depart,
-            'Km arrivée station': f.km_arrivee,
-            'Km parcouru': f.km_parcouru,
-            'Type carburant': f.type,
-            'Quantité (L)': f.litres,
-            'Consommation 100km': f.consommation_100km,
-            'Prix unitaire': f.prix_unitaire,
-            'Coût total': f.cout
-          };
-        });
-        
-        const vehicleFuelWS = XLSX.utils.json_to_sheet(vehicleFuelData);
-        XLSX.utils.book_append_sheet(wb, vehicleFuelWS, "Carburant Véhicules");
-      }
-      
-      
-      if (bikeFuelRecords.length > 0) {
-        const bikeFuelData = bikeFuelRecords.map(f => {
-          const bike = bikes.find(b => b.id === f.bike_id) || {};
-          return {
-            'Moto': bike.immatriculation || 'Inconnu',
-            'Date': formatToFrenchDate(f.date),
-            'Km départ': f.km_depart,
-            'Km arrivée station': f.km_arrivee,
-            'Km parcouru': f.km_parcouru,
-            'Type carburant': f.type,
-            'Quantité (L)': f.litres,
-            'Consommation 100km': f.consommation_100km,
-            'Prix unitaire': f.prix_unitaire,
-            'Coût total': f.cout
-          };
-        });
-        
-        const bikeFuelWS = XLSX.utils.json_to_sheet(bikeFuelData);
-        XLSX.utils.book_append_sheet(wb, bikeFuelWS, "Carburant Motos");
-      }
-      
-      
-      if (generatorFuelRecords.length > 0) {
-        const generatorFuelData = generatorFuelRecords.map(f => {
-          const generator = generators.find(g => g.id === f.generator_id) || {};
-          return {
-            'Groupe': generator.immatriculation || 'Inconnu',
-            'Date': formatToFrenchDate(f.date),
-            'Quantité ravitaillée (L)': f.quantite_ravitailler,
-            'Heure marche': f.heure_marche,
-            'Heure arrêt': f.heure_arret,
-            'Temps fonctionnement': f.temps_fonctionnement,
-            'Quantité consommée/h (L/h)': f.quantite_consommee_heure,
-            'Prix unitaire': f.prix_unitaire,
-            'Coût total': f.cout
-          };
-        });
-        
-        const generatorFuelWS = XLSX.utils.json_to_sheet(generatorFuelData);
-        XLSX.utils.book_append_sheet(wb, generatorFuelWS, "Carburant Groupes");
-      }
-      
-  
-      XLSX.writeFile(wb, "gestion_flotte.xlsx");
-      showToast('Export Excel réussi', 'success');
-    });
-
-    
-    function initApp() {
-      renderVehiclesList();
-      renderHistory();
-      renderBikesList();
-      renderBikeHistory();
-      renderGeneratorsList();
-      renderGeneratorHistory();
-      populateVehicleDropdown();
+      // Mettre à jour les dropdowns
       populateBikeDropdown();
-      populateGeneratorDropdown();
-      populateGeneratorMaintenanceDropdown();
-      setupAutoCalculations();
     }
- document.addEventListener('DOMContentLoaded', initApp);
+
+    // Remplir les dropdowns des motos
+    async function populateBikeDropdown() {
+      const bikes = await getBikes();
+      const carburantDropdown = document.getElementById('bike_carburant_moto');
+      const maintenanceDropdown = document.getElementById('maintenance_bike');
+      
+      let carburantOptions = '<option value="">Sélectionner une moto...</option>';
+      let maintenanceOptions = '<option value="">Sélectionner une moto...</option>';
+      
+      bikes.forEach(bike => {
+        carburantOptions += `<option value="${bike.id}">${bike.immatriculation} - ${bike.marque}</option>`;
+        maintenanceOptions += `<option value="${bike.id}">${bike.immatriculation} - ${bike.marque}</option>`;
+      });
+      
+      carburantDropdown.innerHTML = carburantOptions;
+      maintenanceDropdown.innerHTML = maintenanceOptions;
+    }
+
+    // ============================================
+    // FONCTIONS POUR LES GROUPES ÉLECTROGÈNES
+    // ============================================
+    
+    // Récupérer tous les groupes électrogènes
+    async function getGenerators() {
+      try {
+        const { data, error } = await supabase
+          .from('groupes_electrogenes')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Erreur lors de la récupération des groupes:', error);
+        showToast('Erreur lors de la récupération des groupes', 'error');
+        return [];
+      }
+    }
+
+    // Ajouter un groupe électrogène
+    async function addGenerator(generatorData) {
+      try {
+        const { data, error } = await supabase
+          .from('groupes_electrogenes')
+          .insert([generatorData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Groupe électrogène ajouté avec succès', 'success');
+        renderGeneratorsList();
+        clearGeneratorForm();
+        addToHistory('generator', 'Ajout', `Groupe ${generatorData.numero_inventaire} ajouté`);
+        return data[0];
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout du groupe:', error);
+        showToast('Erreur lors de l\'ajout du groupe', 'error');
+        return null;
+      }
+    }
+
+    // Afficher la liste des groupes électrogènes
+    async function renderGeneratorsList() {
+      const generators = await getGenerators();
+      const searchTerm = document.getElementById('search-generator').value.toLowerCase();
+      const tbody = document.getElementById('liste-generators');
+      const countElement = document.getElementById('generator-count');
+      
+      // Filtrer les groupes
+      const filteredGenerators = generators.filter(generator => 
+        generator.numero_inventaire.toLowerCase().includes(searchTerm) ||
+        generator.marque.toLowerCase().includes(searchTerm) ||
+        generator.type.toLowerCase().includes(searchTerm)
+      );
+      
+      // Pagination
+      const totalPages = Math.ceil(filteredGenerators.length / itemsPerPage);
+      const startIndex = (currentGeneratorPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedGenerators = filteredGenerators.slice(startIndex, endIndex);
+      
+      // Mettre à jour les informations de pagination
+      document.getElementById('prev-generator-page').disabled = currentGeneratorPage <= 1;
+      document.getElementById('next-generator-page').disabled = currentGeneratorPage >= totalPages;
+      document.getElementById('generator-page-info').textContent = `Page ${currentGeneratorPage} sur ${totalPages}`;
+      
+      // Générer le HTML
+      let html = '';
+      
+      if (paginatedGenerators.length === 0) {
+        html = `<tr><td colspan="7" class="text-center">Aucun groupe électrogène trouvé</td></tr>`;
+      } else {
+        paginatedGenerators.forEach(generator => {
+          html += `
+            <tr>
+              <td>${generator.numero_inventaire}</td>
+              <td>${generator.marque}</td>
+              <td>${generator.puissance} kVA</td>
+              <td>${generator.type}</td>
+              <td>${formatStatut(generator.statut)}</td>
+              <td><span class="localisation-status ${generator.localisation}">${formatLocalisation(generator.localisation)}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline" onclick="editGenerator('${generator.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="viewGeneratorDetails('${generator.id}')">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="deleteGenerator('${generator.id}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      
+      tbody.innerHTML = html;
+      countElement.textContent = `${filteredGenerators.length} groupe(s)`;
+      
+      // Mettre à jour les dropdowns
+      populateGeneratorDropdown();
+    }
+
+    // Remplir les dropdowns des groupes électrogènes
+    async function populateGeneratorDropdown() {
+      const generators = await getGenerators();
+      const carburantDropdown = document.getElementById('generator_carburant_groupe');
+      const maintenanceDropdown = document.getElementById('generator_maintenance_groupe');
+      
+      let carburantOptions = '<option value="">Sélectionner un groupe...</option>';
+      let maintenanceOptions = '<option value="">Sélectionner un groupe...</option>';
+      
+      generators.forEach(generator => {
+        carburantOptions += `<option value="${generator.id}">${generator.numero_inventaire} - ${generator.marque}</option>`;
+        maintenanceOptions += `<option value="${generator.id}">${generator.numero_inventaire} - ${generator.marque}</option>`;
+      });
+      
+      carburantDropdown.innerHTML = carburantOptions;
+      maintenanceDropdown.innerHTML = maintenanceOptions;
+    }
+
+    // ============================================
+    // GESTION DE L'HISTORIQUE
+    // ============================================
+    
+    // Ajouter une entrée à l'historique
+    function addToHistory(type, action, description) {
+      const history = JSON.parse(localStorage.getItem('fleet_history') || '[]');
+      const entry = {
+        id: Date.now(),
+        type: type,
+        action: action,
+        description: description,
+        date: new Date().toISOString()
+      };
+      
+      history.unshift(entry);
+      if (history.length > 50) history.pop(); // Garder seulement les 50 dernières entrées
+      
+      localStorage.setItem('fleet_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    // Afficher l'historique
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('fleet_history') || '[]');
+      const filterType = document.getElementById('filter-type').value;
+      const timeline = document.getElementById('historique');
+      
+      let filteredHistory = history;
+      if (filterType !== 'all') {
+        filteredHistory = history.filter(entry => entry.type === filterType);
+      }
+      
+      let html = '';
+      
+      if (filteredHistory.length === 0) {
+        html = '<p class="text-center">Aucun historique disponible</p>';
+      } else {
+        filteredHistory.forEach(entry => {
+          const date = new Date(entry.date);
+          const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+          
+          html += `
+            <div class="timeline-item">
+              <div class="timeline-date">${formattedDate}</div>
+              <div class="timeline-content">
+                <strong>${entry.action}</strong> - ${entry.description}
+              </div>
+            </div>
+          `;
+        });
+      }
+      
+      timeline.innerHTML = html;
+    }
+
+    // ============================================
+    // CALCULS AUTOMATIQUES
+    // ============================================
+    
+    function setupAutoCalculations() {
+      // Calcul kilométrage parcouru pour les véhicules
+      const kmAvant = document.getElementById('km_avant');
+      const kmApres = document.getElementById('km_apres');
+      const kmParcouru = document.getElementById('km_parcouru');
+      
+      function calculateKMParcouru() {
+        const avant = parseInt(kmAvant.value) || 0;
+        const apres = parseInt(kmApres.value) || 0;
+        kmParcouru.value = Math.max(0, apres - avant);
+      }
+      
+      if (kmAvant && kmApres && kmParcouru) {
+        kmAvant.addEventListener('input', calculateKMParcouru);
+        kmApres.addEventListener('input', calculateKMParcouru);
+      }
+      
+      // Calcul kilométrage pour le carburant des véhicules
+      const carburantKmDepart = document.getElementById('carburant_km_depart');
+      const carburantKmArrivee = document.getElementById('carburant_km_arrivee');
+      const carburantKmParcouru = document.getElementById('carburant_km_parcouru');
+      
+      function calculateCarburantKMParcouru() {
+        const depart = parseInt(carburantKmDepart.value) || 0;
+        const arrivee = parseInt(carburantKmArrivee.value) || 0;
+        carburantKmParcouru.value = Math.max(0, arrivee - depart);
+      }
+      
+      if (carburantKmDepart && carburantKmArrivee && carburantKmParcouru) {
+        carburantKmDepart.addEventListener('input', calculateCarburantKMParcouru);
+        carburantKmArrivee.addEventListener('input', calculateCarburantKMParcouru);
+      }
+      
+      // Calcul coût total pour le carburant des véhicules
+      const carburantLitres = document.getElementById('carburant_litres');
+      const carburantPrix = document.getElementById('carburant_prix_unitaire');
+      const carburantCout = document.getElementById('carburant_cout');
+      
+      function calculateCarburantCout() {
+        const litres = parseFloat(carburantLitres.value) || 0;
+        const prix = parseFloat(carburantPrix.value) || 0;
+        carburantCout.value = (litres * prix).toFixed(2);
+      }
+      
+      if (carburantLitres && carburantPrix && carburantCout) {
+        carburantLitres.addEventListener('input', calculateCarburantCout);
+        carburantPrix.addEventListener('input', calculateCarburantCout);
+      }
+      
+      // Calcul temps de fonctionnement pour les groupes électrogènes
+      const heureMarche = document.getElementById('generator_carburant_heure_marche');
+      const heureArret = document.getElementById('generator_carburant_heure_arret');
+      const tempsFonctionnement = document.getElementById('generator_carburant_temps_fonctionnement');
+      
+      function calculateTempsFonctionnement() {
+        if (heureMarche.value && heureArret.value) {
+          const [startHours, startMinutes] = heureMarche.value.split(':').map(Number);
+          const [endHours, endMinutes] = heureArret.value.split(':').map(Number);
+          
+          let totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+          
+          // Gérer le cas où l'heure d'arrêt est le lendemain
+          if (totalMinutes < 0) {
+            totalMinutes += 24 * 60;
+          }
+          
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          
+          tempsFonctionnement.value = `${hours}h ${minutes}min`;
+        }
+      }
+      
+      if (heureMarche && heureArret && tempsFonctionnement) {
+        heureMarche.addEventListener('input', calculateTempsFonctionnement);
+        heureArret.addEventListener('input', calculateTempsFonctionnement);
+      }
+      
+      // Calcul coût total pour les groupes électrogènes
+      const generatorQuantite = document.getElementById('generator_carburant_quantite_ravitailler');
+      const generatorPrix = document.getElementById('generator_carburant_prix_unitaire');
+      const generatorCout = document.getElementById('generator_carburant_cout');
+      
+      function calculateGeneratorCout() {
+        const quantite = parseFloat(generatorQuantite.value) || 0;
+        const prix = parseFloat(generatorPrix.value) || 0;
+        generatorCout.value = (quantite * prix).toFixed(2);
+      }
+      
+      if (generatorQuantite && generatorPrix && generatorCout) {
+        generatorQuantite.addEventListener('input', calculateGeneratorCout);
+        generatorPrix.addEventListener('input', calculateGeneratorCout);
+      }
+    }
+
+    // ============================================
+    // GESTION DES ÉVÉNEMENTS
+    // ============================================
+    
+    // Initialisation de l'application
+    function initApp() {
+      // Restaurer le thème
+      const savedTheme = localStorage.getItem('fleet_theme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const themeButton = document.getElementById('toggle-theme');
+        themeButton.innerHTML = savedTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+      }
+      
+      // Gestion des onglets
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          
+          tab.classList.add('active');
+          const tabId = tab.getAttribute('data-tab') + '-tab';
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+      
+      // Bouton thème
+      document.getElementById('toggle-theme').addEventListener('click', function() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? '' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        this.innerHTML = newTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        localStorage.setItem('fleet_theme', newTheme);
+      });
+      
+      // Formulaire véhicule
+      document.getElementById('vehicule-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const vehicleData = {
+          immatriculation: document.getElementById('immatriculation').value,
+          marque: document.getElementById('marque').value,
+          type: document.getElementById('type').value,
+          date_circulation: document.getElementById('date_circulation').value,
+          statut: document.getElementById('statut').value,
+          localisation: document.getElementById('localisation').value,
+          chauffeur: document.getElementById('chauffeur').value,
+          observations: document.getElementById('observations').value,
+          departement: document.getElementById('departement').value,
+          destination: document.getElementById('destination').value,
+          motif_deplacement: document.getElementById('motif_deplacement').value,
+          km_avant: parseInt(document.getElementById('km_avant').value) || 0,
+          km_apres: parseInt(document.getElementById('km_apres').value) || 0,
+          km_parcouru: parseInt(document.getElementById('km_parcouru').value) || 0
+        };
+        
+        if (editingVehicleId) {
+          await updateVehicle(editingVehicleId, vehicleData);
+        } else {
+          await addVehicle(vehicleData);
+        }
+      });
+      
+      // Bouton nouveau véhicule
+      document.getElementById('clear-form').addEventListener('click', clearForm);
+      
+      // Bouton annuler édition
+      document.getElementById('cancel-edit').addEventListener('click', clearForm);
+      
+      // Recherche véhicules
+      document.getElementById('search-vehicule').addEventListener('input', renderVehiclesList);
+      
+      // Pagination véhicules
+      document.getElementById('prev-page').addEventListener('click', () => {
+        if (currentVehiclePage > 1) {
+          currentVehiclePage--;
+          renderVehiclesList();
+        }
+      });
+      
+      document.getElementById('next-page').addEventListener('click', () => {
+        currentVehiclePage++;
+        renderVehiclesList();
+      });
+      
+      // Filtre historique
+      document.getElementById('filter-type').addEventListener('change', renderHistory);
+      
+      // Formulaire carburant véhicule
+      document.getElementById('carburant-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const carburantData = {
+          vehicle_id: document.getElementById('carburant_vehicule').value,
+          date: document.getElementById('carburant_date').value,
+          km_depart: parseInt(document.getElementById('carburant_km_depart').value) || 0,
+          km_arrivee: parseInt(document.getElementById('carburant_km_arrivee').value) || 0,
+          km_parcouru: parseInt(document.getElementById('carburant_km_parcouru').value) || 0,
+          litres: parseFloat(document.getElementById('carburant_litres').value) || 0,
+          consommation_100km: parseFloat(document.getElementById('carburant_consommation_100km').value) || 0,
+          prix_unitaire: parseFloat(document.getElementById('carburant_prix_unitaire').value) || 0,
+          type_carburant: document.getElementById('carburant_type').value,
+          cout_total: parseFloat(document.getElementById('carburant_cout').value) || 0
+        };
+        
+        try {
+          const { data, error } = await supabase
+            .from('carburant')
+            .insert([carburantData])
+            .select();
+          
+          if (error) throw error;
+          
+          showToast('Ravitaillement enregistré avec succès', 'success');
+          document.getElementById('carburant-form').reset();
+          document.getElementById('carburant_km_parcouru').value = '';
+          document.getElementById('carburant_cout').value = '';
+          
+          // Récupérer les informations du véhicule pour l'historique
+          const { data: vehicle } = await supabase
+            .from('vehicles')
+            .select('immatriculation')
+            .eq('id', carburantData.vehicle_id)
+            .single();
+          
+          if (vehicle) {
+            addToHistory('fuel', 'Ravitaillement', `Carburant ajouté pour ${vehicle.immatriculation}`);
+          }
+          
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout du ravitaillement:', error);
+          showToast('Erreur lors de l\'ajout du ravitaillement', 'error');
+        }
+      });
+      
+      // Formulaire maintenance véhicule
+      document.getElementById('vehicle-maintenance-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const maintenanceData = {
+          vehicle_id: document.getElementById('vehicle_maintenance_vehicule').value,
+          date: document.getElementById('vehicle_maintenance_date').value,
+          type: document.getElementById('vehicle_maintenance_type').value,
+          cout: parseFloat(document.getElementById('vehicle_maintenance_cout').value) || 0,
+          description: document.getElementById('vehicle_maintenance_description').value
+        };
+        
+        try {
+          const { data, error } = await supabase
+            .from('maintenance')
+            .insert([maintenanceData])
+            .select();
+          
+          if (error) throw error;
+          
+          showToast('Maintenance enregistrée avec succès', 'success');
+          document.getElementById('vehicle-maintenance-form').reset();
+          
+          // Récupérer les informations du véhicule pour l'historique
+          const { data: vehicle } = await supabase
+            .from('vehicles')
+            .select('immatriculation')
+            .eq('id', maintenanceData.vehicle_id)
+            .single();
+          
+          if (vehicle) {
+            addToHistory('maintenance', 'Maintenance', `Maintenance ajoutée pour ${vehicle.immatriculation}`);
+          }
+          
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout de la maintenance:', error);
+          showToast('Erreur lors de l\'ajout de la maintenance', 'error');
+        }
+      });
+      
+      // Export Excel
+      document.getElementById('export-excel').addEventListener('click', async () => {
+        const vehicles = await getVehicles();
+        
+        // Formater les données pour Excel
+        const data = vehicles.map(vehicle => [
+          vehicle.immatriculation,
+          vehicle.marque,
+          vehicle.type,
+          formatDate(vehicle.date_circulation),
+          vehicle.statut,
+          formatLocalisation(vehicle.localisation),
+          vehicle.chauffeur || '',
+          vehicle.departement || '',
+          vehicle.destination || '',
+          vehicle.km_parcouru || 0
+        ]);
+        
+        // Créer le classeur Excel
+        const ws = XLSX.utils.aoa_to_sheet([
+          ['Immatriculation', 'Marque/Modèle', 'Type', 'Date Circulation', 'Statut', 'Localisation', 'Chauffeur', 'Département', 'Destination', 'Km Parcouru'],
+          ...data
+        ]);
+        
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Véhicules');
+        
+        // Générer et télécharger
+        const today = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `flotte_vehicules_${today}.xlsx`);
+        showToast('Export Excel généré avec succès', 'success');
+      });
+      
+      // Modals
+      document.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', function() {
+          this.closest('.modal').classList.remove('show');
+        });
+      });
+      
+      // Fermer les modals en cliquant à l'extérieur
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('show');
+          }
+        });
+      });
+      
+      // Initialiser les calculs automatiques
+      setupAutoCalculations();
+      
+      // Rendre les listes initiales
+      renderVehiclesList();
+      renderBikesList();
+      renderGeneratorsList();
+      renderHistory();
+    }
+
+    // Démarrer l'application quand le DOM est chargé
+    document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
