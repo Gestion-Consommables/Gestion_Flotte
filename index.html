@@ -57,6 +57,7 @@
       margin: 0 auto;
       padding: 0 20px;
     }
+    
     .app-header {
       background-color: var(--dark-color);
       color: white;
@@ -729,7 +730,6 @@
     <div class="container">
       <div class="header-logo-container">
         <div class="header-logo">
-          
           <div class="logo-text">
             <div class="logo-main">LA POSTE</div>
             <div class="logo-sub">GUINÉENNE</div>
@@ -1624,12 +1624,18 @@
     // ============================================
     // CONFIGURATION SUPABASE
     // ============================================
-    // REMPLACEZ CES VALEURS AVEC VOS PROPRES CRÉDENTIALS SUPABASE
     const SUPABASE_URL = 'https://cxqyjgfnelzunbbxvaiu.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4cXlqZ2ZuZWx6dW5iYnh2YWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1ODczOTksImV4cCI6MjA4MDE2MzM5OX0.Gj6HCxcIKv0o4mImP4IH2Thur5lm0QOqVMEKzY1JVxo';
     
     // Initialisation de Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let supabase;
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log("Supabase initialisé avec succès");
+    } catch (error) {
+      console.error("Erreur d'initialisation Supabase:", error);
+      supabase = null;
+    }
 
     // ============================================
     // VARIABLES GLOBALES ET ÉTAT
@@ -1646,20 +1652,22 @@
     let localVehicles = JSON.parse(localStorage.getItem('local_vehicles')) || [];
     let localBikes = JSON.parse(localStorage.getItem('local_bikes')) || [];
     let localGenerators = JSON.parse(localStorage.getItem('local_generators')) || [];
-    let localFuelRecords = JSON.parse(localStorage.getItem('local_fuel')) || [];
-    let localMaintenance = JSON.parse(localStorage.getItem('local_maintenance')) || [];
+    let localVehicleFuel = JSON.parse(localStorage.getItem('local_vehicle_fuel')) || [];
+    let localVehicleMaintenance = JSON.parse(localStorage.getItem('local_vehicle_maintenance')) || [];
+    let localBikeFuel = JSON.parse(localStorage.getItem('local_bike_fuel')) || [];
+    let localBikeMaintenance = JSON.parse(localStorage.getItem('local_bike_maintenance')) || [];
+    let localGeneratorFuel = JSON.parse(localStorage.getItem('local_generator_fuel')) || [];
+    let localGeneratorMaintenance = JSON.parse(localStorage.getItem('local_generator_maintenance')) || [];
 
     // ============================================
     // FONCTIONS UTILITAIRES
     // ============================================
     
-    // Fonction pour afficher les notifications
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.className = 'toast';
       
-      // Ajouter classe de type
       if (type === 'success') {
         toast.style.backgroundColor = '#27ae60';
       } else if (type === 'error') {
@@ -1672,13 +1680,11 @@
       
       toast.classList.add('show');
       
-      // Masquer après 3 secondes
       setTimeout(() => {
         toast.classList.remove('show');
       }, 3000);
     }
 
-    // Fonction pour formater la localisation
     function formatLocalisation(localisation) {
       const localisations = {
         'garage': 'Garage',
@@ -1691,7 +1697,6 @@
       return localisations[localisation] || localisation;
     }
 
-    // Fonction pour formater le statut
     function formatStatut(statut) {
       const statuts = {
         'en service': { class: 'en-service', text: 'En service' },
@@ -1704,11 +1709,9 @@
       return `<span class="bike-status ${statutInfo.class}">${statutInfo.text}</span>`;
     }
 
-    // Fonction pour formater la date
     function formatDate(dateString) {
       if (!dateString) return 'Non spécifié';
       
-      // Si la date est déjà formatée, la retourner telle quelle
       if (dateString.includes(' ')) {
         const parts = dateString.split(' ');
         if (parts.length === 3) {
@@ -1718,7 +1721,6 @@
       return dateString;
     }
 
-    // Fonction pour convertir le format JJ MM AAAA
     function convertToStandardDate(dateString) {
       if (!dateString) return '';
       
@@ -1736,8 +1738,12 @@
     // FONCTIONS SUPABASE POUR LES VÉHICULES
     // ============================================
     
-    // Récupérer tous les véhicules
     async function getVehicles() {
+      if (!supabase) {
+        console.log("Supabase non disponible, utilisation des données locales");
+        return localVehicles;
+      }
+      
       try {
         const { data, error } = await supabase
           .from('vehicles')
@@ -1756,10 +1762,24 @@
       }
     }
 
-    // Ajouter un véhicule
     async function addVehicle(vehicleData) {
+      const vehicleForLocal = {
+        ...vehicleData,
+        id: 'local_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localVehicles.push(vehicleForLocal);
+        localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
+        showToast('Véhicule sauvegardé localement (Supabase indisponible)', 'warning');
+        renderVehiclesList();
+        clearVehicleForm();
+        addToHistory('vehicle', 'Ajout', `Véhicule ${vehicleData.immatriculation} ajouté`);
+        return vehicleForLocal;
+      }
+      
       try {
-        // Préparer les données pour Supabase
         const supabaseData = {
           immatriculation: vehicleData.immatriculation,
           marque: vehicleData.marque,
@@ -1786,7 +1806,6 @@
         
         showToast('Véhicule ajouté avec succès (Supabase)', 'success');
         
-        // Ajouter aussi en local pour référence
         vehicleData.id = data[0].id;
         localVehicles.push(vehicleData);
         localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
@@ -1799,21 +1818,33 @@
       } catch (error) {
         console.error('Erreur Supabase, sauvegarde locale:', error);
         
-        // Fallback: Sauvegarder localement
-        vehicleData.id = 'local_' + Date.now();
-        localVehicles.push(vehicleData);
+        localVehicles.push(vehicleForLocal);
         localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
         
-        showToast('Véhicule sauvegardé localement (Supabase indisponible)', 'warning');
+        showToast('Véhicule sauvegardé localement', 'warning');
         renderVehiclesList();
         clearVehicleForm();
         
-        return vehicleData;
+        return vehicleForLocal;
       }
     }
 
-    // Mettre à jour un véhicule
     async function updateVehicle(id, vehicleData) {
+      // Mettre à jour localement d'abord
+      const localIndex = localVehicles.findIndex(v => v.id === id);
+      if (localIndex !== -1) {
+        localVehicles[localIndex] = { ...localVehicles[localIndex], ...vehicleData };
+        localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
+      }
+      
+      if (!supabase || id.startsWith('local_')) {
+        showToast('Véhicule mis à jour localement', 'success');
+        renderVehiclesList();
+        clearVehicleForm();
+        addToHistory('vehicle', 'Modification', `Véhicule ${vehicleData.immatriculation} modifié`);
+        return;
+      }
+      
       try {
         const supabaseData = {
           immatriculation: vehicleData.immatriculation,
@@ -1841,39 +1872,37 @@
         
         showToast('Véhicule mis à jour avec succès (Supabase)', 'success');
         
-        // Mettre à jour aussi en local
-        const localIndex = localVehicles.findIndex(v => v.id === id);
-        if (localIndex !== -1) {
-          localVehicles[localIndex] = { ...localVehicles[localIndex], ...vehicleData };
-          localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
-        }
-        
         renderVehiclesList();
         clearVehicleForm();
         addToHistory('vehicle', 'Modification', `Véhicule ${vehicleData.immatriculation} modifié`);
         
       } catch (error) {
-        console.error('Erreur Supabase, mise à jour locale:', error);
-        
-        // Mettre à jour localement
-        const localIndex = localVehicles.findIndex(v => v.id === id);
-        if (localIndex !== -1) {
-          localVehicles[localIndex] = { ...localVehicles[localIndex], ...vehicleData };
-          localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
-        }
-        
-        showToast('Véhicule mis à jour localement', 'warning');
+        console.error('Erreur Supabase:', error);
+        showToast('Véhicule mis à jour localement (Supabase indisponible)', 'warning');
         renderVehiclesList();
         clearVehicleForm();
       }
     }
 
-    // Supprimer un véhicule
     async function deleteVehicle(id) {
       if (!confirm('Êtes-vous sûr de vouloir supprimer ce véhicule?')) return;
       
+      // Supprimer localement d'abord
+      const vehicle = localVehicles.find(v => v.id === id);
+      localVehicles = localVehicles.filter(v => v.id !== id);
+      localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
+      
+      if (vehicle) {
+        addToHistory('vehicle', 'Suppression', `Véhicule ${vehicle.immatriculation} supprimé`);
+      }
+      
+      if (!supabase || id.startsWith('local_')) {
+        showToast('Véhicule supprimé localement', 'success');
+        renderVehiclesList();
+        return;
+      }
+      
       try {
-        // Supprimer de Supabase
         const { error } = await supabase
           .from('vehicles')
           .delete()
@@ -1884,23 +1913,21 @@
         showToast('Véhicule supprimé avec succès (Supabase)', 'success');
       } catch (error) {
         console.error('Erreur Supabase:', error);
-      }
-      
-      // Toujours supprimer localement
-      localVehicles = localVehicles.filter(v => v.id !== id);
-      localStorage.setItem('local_vehicles', JSON.stringify(localVehicles));
-      
-      // Récupérer les informations pour l'historique
-      const vehicle = await getVehicleById(id);
-      if (vehicle) {
-        addToHistory('vehicle', 'Suppression', `Véhicule ${vehicle.immatriculation} supprimé`);
+        showToast('Véhicule supprimé localement (Supabase indisponible)', 'warning');
       }
       
       renderVehiclesList();
     }
 
-    // Récupérer un véhicule par ID
     async function getVehicleById(id) {
+      // Chercher localement d'abord
+      const localVehicle = localVehicles.find(v => v.id === id);
+      if (localVehicle) return localVehicle;
+      
+      if (!supabase || id.startsWith('local_')) {
+        return localVehicle;
+      }
+      
       try {
         const { data, error } = await supabase
           .from('vehicles')
@@ -1913,8 +1940,959 @@
         console.error('Erreur Supabase:', error);
       }
       
-      // Fallback local
-      return localVehicles.find(v => v.id === id);
+      return null;
+    }
+
+    // ============================================
+    // FONCTIONS SIMILAIRES POUR LES MOTOS
+    // ============================================
+    
+    async function getBikes() {
+      if (!supabase) {
+        return localBikes;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('motos')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour les motos:', error);
+          return localBikes;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localBikes;
+      }
+    }
+
+    async function addBike(bikeData) {
+      const bikeForLocal = {
+        ...bikeData,
+        id: 'local_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localBikes.push(bikeForLocal);
+        localStorage.setItem('local_bikes', JSON.stringify(localBikes));
+        showToast('Moto sauvegardée localement (Supabase indisponible)', 'warning');
+        renderBikesList();
+        clearBikeForm();
+        addToHistory('bike', 'Ajout', `Moto ${bikeData.immatriculation} ajoutée`);
+        return bikeForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          immatriculation: bikeData.immatriculation,
+          marque: bikeData.marque,
+          type: bikeData.type,
+          date_circulation: convertToStandardDate(bikeData.date_circulation),
+          statut: bikeData.statut,
+          localisation: bikeData.localisation,
+          chauffeur: bikeData.chauffeur || null,
+          observations: bikeData.observations || null
+        };
+        
+        const { data, error } = await supabase
+          .from('motos')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Moto ajoutée avec succès (Supabase)', 'success');
+        
+        bikeData.id = data[0].id;
+        localBikes.push(bikeData);
+        localStorage.setItem('local_bikes', JSON.stringify(localBikes));
+        
+        renderBikesList();
+        clearBikeForm();
+        addToHistory('bike', 'Ajout', `Moto ${bikeData.immatriculation} ajoutée`);
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localBikes.push(bikeForLocal);
+        localStorage.setItem('local_bikes', JSON.stringify(localBikes));
+        
+        showToast('Moto sauvegardée localement', 'warning');
+        renderBikesList();
+        clearBikeForm();
+        
+        return bikeForLocal;
+      }
+    }
+
+    async function updateBike(id, bikeData) {
+      const localIndex = localBikes.findIndex(b => b.id === id);
+      if (localIndex !== -1) {
+        localBikes[localIndex] = { ...localBikes[localIndex], ...bikeData };
+        localStorage.setItem('local_bikes', JSON.stringify(localBikes));
+      }
+      
+      if (!supabase || id.startsWith('local_')) {
+        showToast('Moto mise à jour localement', 'success');
+        renderBikesList();
+        clearBikeForm();
+        addToHistory('bike', 'Modification', `Moto ${bikeData.immatriculation} modifiée`);
+        return;
+      }
+      
+      try {
+        const supabaseData = {
+          immatriculation: bikeData.immatriculation,
+          marque: bikeData.marque,
+          type: bikeData.type,
+          date_circulation: convertToStandardDate(bikeData.date_circulation),
+          statut: bikeData.statut,
+          localisation: bikeData.localisation,
+          chauffeur: bikeData.chauffeur || null,
+          observations: bikeData.observations || null
+        };
+        
+        const { error } = await supabase
+          .from('motos')
+          .update(supabaseData)
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Moto mise à jour avec succès (Supabase)', 'success');
+        
+        renderBikesList();
+        clearBikeForm();
+        addToHistory('bike', 'Modification', `Moto ${bikeData.immatriculation} modifiée`);
+        
+      } catch (error) {
+        console.error('Erreur Supabase:', error);
+        showToast('Moto mise à jour localement (Supabase indisponible)', 'warning');
+        renderBikesList();
+        clearBikeForm();
+      }
+    }
+
+    async function deleteBike(id) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer cette moto?')) return;
+      
+      const bike = localBikes.find(b => b.id === id);
+      localBikes = localBikes.filter(b => b.id !== id);
+      localStorage.setItem('local_bikes', JSON.stringify(localBikes));
+      
+      if (bike) {
+        addToHistory('bike', 'Suppression', `Moto ${bike.immatriculation} supprimée`);
+      }
+      
+      if (!supabase || id.startsWith('local_')) {
+        showToast('Moto supprimée localement', 'success');
+        renderBikesList();
+        return;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from('motos')
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Moto supprimée avec succès (Supabase)', 'success');
+      } catch (error) {
+        console.error('Erreur Supabase:', error);
+        showToast('Moto supprimée localement (Supabase indisponible)', 'warning');
+      }
+      
+      renderBikesList();
+    }
+
+    async function getBikeById(id) {
+      const localBike = localBikes.find(b => b.id === id);
+      if (localBike) return localBike;
+      
+      if (!supabase || id.startsWith('local_')) {
+        return localBike;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('motos')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (!error && data) return data;
+      } catch (error) {
+        console.error('Erreur Supabase:', error);
+      }
+      
+      return null;
+    }
+
+    // ============================================
+    // FONCTIONS SIMILAIRES POUR LES GROUPES ÉLECTROGÈNES
+    // ============================================
+    
+    async function getGenerators() {
+      if (!supabase) {
+        return localGenerators;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('generators')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour les groupes:', error);
+          return localGenerators;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localGenerators;
+      }
+    }
+
+    async function addGenerator(generatorData) {
+      const generatorForLocal = {
+        ...generatorData,
+        id: 'local_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localGenerators.push(generatorForLocal);
+        localStorage.setItem('local_generators', JSON.stringify(localGenerators));
+        showToast('Groupe électrogène sauvegardé localement (Supabase indisponible)', 'warning');
+        renderGeneratorsList();
+        clearGeneratorForm();
+        addToHistory('generator', 'Ajout', `Groupe ${generatorData.immatriculation} ajouté`);
+        return generatorForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          immatriculation: generatorData.immatriculation,
+          marque: generatorData.marque,
+          type: generatorData.type,
+          puissance: generatorData.puissance,
+          date_mise_service: convertToStandardDate(generatorData.date_mise_service),
+          statut: generatorData.statut,
+          localisation: generatorData.localisation,
+          observations: generatorData.observations || null
+        };
+        
+        const { data, error } = await supabase
+          .from('generators')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Groupe électrogène ajouté avec succès (Supabase)', 'success');
+        
+        generatorData.id = data[0].id;
+        localGenerators.push(generatorData);
+        localStorage.setItem('local_generators', JSON.stringify(localGenerators));
+        
+        renderGeneratorsList();
+        clearGeneratorForm();
+        addToHistory('generator', 'Ajout', `Groupe ${generatorData.immatriculation} ajouté`);
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localGenerators.push(generatorForLocal);
+        localStorage.setItem('local_generators', JSON.stringify(localGenerators));
+        
+        showToast('Groupe électrogène sauvegardé localement', 'warning');
+        renderGeneratorsList();
+        clearGeneratorForm();
+        
+        return generatorForLocal;
+      }
+    }
+
+    async function updateGenerator(id, generatorData) {
+      const localIndex = localGenerators.findIndex(g => g.id === id);
+      if (localIndex !== -1) {
+        localGenerators[localIndex] = { ...localGenerators[localIndex], ...generatorData };
+        localStorage.setItem('local_generators', JSON.stringify(localGenerators));
+      }
+      
+      if (!supabase || id.startsWith('local_')) {
+        showToast('Groupe électrogène mis à jour localement', 'success');
+        renderGeneratorsList();
+        clearGeneratorForm();
+        addToHistory('generator', 'Modification', `Groupe ${generatorData.immatriculation} modifié`);
+        return;
+      }
+      
+      try {
+        const supabaseData = {
+          immatriculation: generatorData.immatriculation,
+          marque: generatorData.marque,
+          type: generatorData.type,
+          puissance: generatorData.puissance,
+          date_mise_service: convertToStandardDate(generatorData.date_mise_service),
+          statut: generatorData.statut,
+          localisation: generatorData.localisation,
+          observations: generatorData.observations || null
+        };
+        
+        const { error } = await supabase
+          .from('generators')
+          .update(supabaseData)
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Groupe électrogène mis à jour avec succès (Supabase)', 'success');
+        
+        renderGeneratorsList();
+        clearGeneratorForm();
+        addToHistory('generator', 'Modification', `Groupe ${generatorData.immatriculation} modifié`);
+        
+      } catch (error) {
+        console.error('Erreur Supabase:', error);
+        showToast('Groupe électrogène mis à jour localement (Supabase indisponible)', 'warning');
+        renderGeneratorsList();
+        clearGeneratorForm();
+      }
+    }
+
+    async function deleteGenerator(id) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer ce groupe électrogène?')) return;
+      
+      const generator = localGenerators.find(g => g.id === id);
+      localGenerators = localGenerators.filter(g => g.id !== id);
+      localStorage.setItem('local_generators', JSON.stringify(localGenerators));
+      
+      if (generator) {
+        addToHistory('generator', 'Suppression', `Groupe ${generator.immatriculation} supprimé`);
+      }
+      
+      if (!supabase || id.startsWith('local_')) {
+        showToast('Groupe électrogène supprimé localement', 'success');
+        renderGeneratorsList();
+        return;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from('generators')
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Groupe électrogène supprimé avec succès (Supabase)', 'success');
+      } catch (error) {
+        console.error('Erreur Supabase:', error);
+        showToast('Groupe électrogène supprimé localement (Supabase indisponible)', 'warning');
+      }
+      
+      renderGeneratorsList();
+    }
+
+    async function getGeneratorById(id) {
+      const localGenerator = localGenerators.find(g => g.id === id);
+      if (localGenerator) return localGenerator;
+      
+      if (!supabase || id.startsWith('local_')) {
+        return localGenerator;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('generators')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (!error && data) return data;
+      } catch (error) {
+        console.error('Erreur Supabase:', error);
+      }
+      
+      return null;
+    }
+
+    // ============================================
+    // FONCTIONS SUPABASE POUR LE CARBURANT (VÉHICULES)
+    // ============================================
+    
+    async function addVehicleFuel(fuelData) {
+      const fuelForLocal = {
+        ...fuelData,
+        id: 'local_fuel_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localVehicleFuel.push(fuelForLocal);
+        localStorage.setItem('local_vehicle_fuel', JSON.stringify(localVehicleFuel));
+        showToast('Ravitaillement sauvegardé localement (Supabase indisponible)', 'warning');
+        
+        const vehicle = await getVehicleById(fuelData.vehicle_id);
+        if (vehicle) {
+          addToHistory('fuel', 'Ravitaillement', `Carburant ajouté pour ${vehicle.immatriculation}`);
+        }
+        
+        return fuelForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          vehicle_id: fuelData.vehicle_id,
+          date: convertToStandardDate(fuelData.date),
+          km_depart: fuelData.km_depart,
+          km_arrivee: fuelData.km_arrivee,
+          km_parcouru: fuelData.km_parcouru,
+          litres: fuelData.litres,
+          consommation_100km: fuelData.consommation_100km,
+          prix_unitaire: fuelData.prix_unitaire,
+          type: fuelData.type,
+          cout: fuelData.cout
+        };
+        
+        const { data, error } = await supabase
+          .from('vehicle_fuel')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Ravitaillement enregistré avec succès (Supabase)', 'success');
+        
+        fuelData.id = data[0].id;
+        localVehicleFuel.push(fuelData);
+        localStorage.setItem('local_vehicle_fuel', JSON.stringify(localVehicleFuel));
+        
+        const vehicle = await getVehicleById(fuelData.vehicle_id);
+        if (vehicle) {
+          addToHistory('fuel', 'Ravitaillement', `Carburant ajouté pour ${vehicle.immatriculation}`);
+        }
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localVehicleFuel.push(fuelForLocal);
+        localStorage.setItem('local_vehicle_fuel', JSON.stringify(localVehicleFuel));
+        
+        showToast('Ravitaillement sauvegardé localement', 'warning');
+        
+        const vehicle = await getVehicleById(fuelData.vehicle_id);
+        if (vehicle) {
+          addToHistory('fuel', 'Ravitaillement', `Carburant ajouté pour ${vehicle.immatriculation}`);
+        }
+        
+        return fuelForLocal;
+      }
+    }
+
+    async function getVehicleFuel() {
+      if (!supabase) {
+        return localVehicleFuel;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('vehicle_fuel')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour le carburant véhicule:', error);
+          return localVehicleFuel;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localVehicleFuel;
+      }
+    }
+
+    // ============================================
+    // FONCTIONS SUPABASE POUR LE CARBURANT (MOTOS)
+    // ============================================
+    
+    async function addBikeFuel(fuelData) {
+      const fuelForLocal = {
+        ...fuelData,
+        id: 'local_bike_fuel_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localBikeFuel.push(fuelForLocal);
+        localStorage.setItem('local_bike_fuel', JSON.stringify(localBikeFuel));
+        showToast('Ravitaillement moto sauvegardé localement (Supabase indisponible)', 'warning');
+        
+        const bike = await getBikeById(fuelData.bike_id);
+        if (bike) {
+          addToHistory('bike_fuel', 'Ravitaillement', `Carburant ajouté pour moto ${bike.immatriculation}`);
+        }
+        
+        return fuelForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          bike_id: fuelData.bike_id,
+          date: convertToStandardDate(fuelData.date),
+          km_depart: fuelData.km_depart,
+          km_arrivee: fuelData.km_arrivee,
+          km_parcouru: fuelData.km_parcouru,
+          litres: fuelData.litres,
+          consommation_100km: fuelData.consommation_100km,
+          prix_unitaire: fuelData.prix_unitaire,
+          type: fuelData.type,
+          cout: fuelData.cout
+        };
+        
+        const { data, error } = await supabase
+          .from('bike_fuel')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Ravitaillement moto enregistré avec succès (Supabase)', 'success');
+        
+        fuelData.id = data[0].id;
+        localBikeFuel.push(fuelData);
+        localStorage.setItem('local_bike_fuel', JSON.stringify(localBikeFuel));
+        
+        const bike = await getBikeById(fuelData.bike_id);
+        if (bike) {
+          addToHistory('bike_fuel', 'Ravitaillement', `Carburant ajouté pour moto ${bike.immatriculation}`);
+        }
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localBikeFuel.push(fuelForLocal);
+        localStorage.setItem('local_bike_fuel', JSON.stringify(localBikeFuel));
+        
+        showToast('Ravitaillement moto sauvegardé localement', 'warning');
+        
+        const bike = await getBikeById(fuelData.bike_id);
+        if (bike) {
+          addToHistory('bike_fuel', 'Ravitaillement', `Carburant ajouté pour moto ${bike.immatriculation}`);
+        }
+        
+        return fuelForLocal;
+      }
+    }
+
+    async function getBikeFuel() {
+      if (!supabase) {
+        return localBikeFuel;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('bike_fuel')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour le carburant moto:', error);
+          return localBikeFuel;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localBikeFuel;
+      }
+    }
+
+    // ============================================
+    // FONCTIONS SUPABASE POUR LE CARBURANT (GROUPES)
+    // ============================================
+    
+    async function addGeneratorFuel(fuelData) {
+      const fuelForLocal = {
+        ...fuelData,
+        id: 'local_generator_fuel_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localGeneratorFuel.push(fuelForLocal);
+        localStorage.setItem('local_generator_fuel', JSON.stringify(localGeneratorFuel));
+        showToast('Ravitaillement groupe sauvegardé localement (Supabase indisponible)', 'warning');
+        
+        const generator = await getGeneratorById(fuelData.generator_id);
+        if (generator) {
+          addToHistory('generator_fuel', 'Ravitaillement', `Carburant ajouté pour groupe ${generator.immatriculation}`);
+        }
+        
+        return fuelForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          generator_id: fuelData.generator_id,
+          date: convertToStandardDate(fuelData.date),
+          quantite_ravitailler: fuelData.quantite_ravitailler,
+          heure_marche: fuelData.heure_marche,
+          heure_arret: fuelData.heure_arret,
+          temps_fonctionnement: fuelData.temps_fonctionnement,
+          quantite_consommee_heure: fuelData.quantite_consommee_heure,
+          prix_unitaire: fuelData.prix_unitaire,
+          cout: fuelData.cout
+        };
+        
+        const { data, error } = await supabase
+          .from('generator_fuel')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Ravitaillement groupe enregistré avec succès (Supabase)', 'success');
+        
+        fuelData.id = data[0].id;
+        localGeneratorFuel.push(fuelData);
+        localStorage.setItem('local_generator_fuel', JSON.stringify(localGeneratorFuel));
+        
+        const generator = await getGeneratorById(fuelData.generator_id);
+        if (generator) {
+          addToHistory('generator_fuel', 'Ravitaillement', `Carburant ajouté pour groupe ${generator.immatriculation}`);
+        }
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localGeneratorFuel.push(fuelForLocal);
+        localStorage.setItem('local_generator_fuel', JSON.stringify(localGeneratorFuel));
+        
+        showToast('Ravitaillement groupe sauvegardé localement', 'warning');
+        
+        const generator = await getGeneratorById(fuelData.generator_id);
+        if (generator) {
+          addToHistory('generator_fuel', 'Ravitaillement', `Carburant ajouté pour groupe ${generator.immatriculation}`);
+        }
+        
+        return fuelForLocal;
+      }
+    }
+
+    async function getGeneratorFuel() {
+      if (!supabase) {
+        return localGeneratorFuel;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('generator_fuel')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour le carburant groupe:', error);
+          return localGeneratorFuel;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localGeneratorFuel;
+      }
+    }
+
+    // ============================================
+    // FONCTIONS SUPABASE POUR LA MAINTENANCE (VÉHICULES)
+    // ============================================
+    
+    async function addVehicleMaintenance(maintenanceData) {
+      const maintenanceForLocal = {
+        ...maintenanceData,
+        id: 'local_maintenance_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localVehicleMaintenance.push(maintenanceForLocal);
+        localStorage.setItem('local_vehicle_maintenance', JSON.stringify(localVehicleMaintenance));
+        showToast('Maintenance sauvegardée localement (Supabase indisponible)', 'warning');
+        
+        const vehicle = await getVehicleById(maintenanceData.vehicle_id);
+        if (vehicle) {
+          addToHistory('maintenance', 'Maintenance', `Maintenance pour ${vehicle.immatriculation}`);
+        }
+        
+        return maintenanceForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          vehicle_id: maintenanceData.vehicle_id,
+          date: convertToStandardDate(maintenanceData.date),
+          type: maintenanceData.type,
+          cout: maintenanceData.cout,
+          description: maintenanceData.description || null
+        };
+        
+        const { data, error } = await supabase
+          .from('vehicle_maintenance')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Maintenance enregistrée avec succès (Supabase)', 'success');
+        
+        maintenanceData.id = data[0].id;
+        localVehicleMaintenance.push(maintenanceData);
+        localStorage.setItem('local_vehicle_maintenance', JSON.stringify(localVehicleMaintenance));
+        
+        const vehicle = await getVehicleById(maintenanceData.vehicle_id);
+        if (vehicle) {
+          addToHistory('maintenance', 'Maintenance', `Maintenance pour ${vehicle.immatriculation}`);
+        }
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localVehicleMaintenance.push(maintenanceForLocal);
+        localStorage.setItem('local_vehicle_maintenance', JSON.stringify(localVehicleMaintenance));
+        
+        showToast('Maintenance sauvegardée localement', 'warning');
+        
+        const vehicle = await getVehicleById(maintenanceData.vehicle_id);
+        if (vehicle) {
+          addToHistory('maintenance', 'Maintenance', `Maintenance pour ${vehicle.immatriculation}`);
+        }
+        
+        return maintenanceForLocal;
+      }
+    }
+
+    async function getVehicleMaintenance() {
+      if (!supabase) {
+        return localVehicleMaintenance;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('vehicle_maintenance')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour la maintenance véhicule:', error);
+          return localVehicleMaintenance;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localVehicleMaintenance;
+      }
+    }
+
+    // ============================================
+    // FONCTIONS SUPABASE POUR LA MAINTENANCE (MOTOS)
+    // ============================================
+    
+    async function addBikeMaintenance(maintenanceData) {
+      const maintenanceForLocal = {
+        ...maintenanceData,
+        id: 'local_bike_maintenance_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localBikeMaintenance.push(maintenanceForLocal);
+        localStorage.setItem('local_bike_maintenance', JSON.stringify(localBikeMaintenance));
+        showToast('Maintenance moto sauvegardée localement (Supabase indisponible)', 'warning');
+        
+        const bike = await getBikeById(maintenanceData.bike_id);
+        if (bike) {
+          addToHistory('bike_maintenance', 'Maintenance', `Maintenance pour moto ${bike.immatriculation}`);
+        }
+        
+        return maintenanceForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          bike_id: maintenanceData.bike_id,
+          date: convertToStandardDate(maintenanceData.date),
+          type: maintenanceData.type,
+          cout: maintenanceData.cout,
+          description: maintenanceData.description || null
+        };
+        
+        const { data, error } = await supabase
+          .from('bike_maintenance')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Maintenance moto enregistrée avec succès (Supabase)', 'success');
+        
+        maintenanceData.id = data[0].id;
+        localBikeMaintenance.push(maintenanceData);
+        localStorage.setItem('local_bike_maintenance', JSON.stringify(localBikeMaintenance));
+        
+        const bike = await getBikeById(maintenanceData.bike_id);
+        if (bike) {
+          addToHistory('bike_maintenance', 'Maintenance', `Maintenance pour moto ${bike.immatriculation}`);
+        }
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localBikeMaintenance.push(maintenanceForLocal);
+        localStorage.setItem('local_bike_maintenance', JSON.stringify(localBikeMaintenance));
+        
+        showToast('Maintenance moto sauvegardée localement', 'warning');
+        
+        const bike = await getBikeById(maintenanceData.bike_id);
+        if (bike) {
+          addToHistory('bike_maintenance', 'Maintenance', `Maintenance pour moto ${bike.immatriculation}`);
+        }
+        
+        return maintenanceForLocal;
+      }
+    }
+
+    async function getBikeMaintenance() {
+      if (!supabase) {
+        return localBikeMaintenance;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('bike_maintenance')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour la maintenance moto:', error);
+          return localBikeMaintenance;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localBikeMaintenance;
+      }
+    }
+
+    // ============================================
+    // FONCTIONS SUPABASE POUR LA MAINTENANCE (GROUPES)
+    // ============================================
+    
+    async function addGeneratorMaintenance(maintenanceData) {
+      const maintenanceForLocal = {
+        ...maintenanceData,
+        id: 'local_generator_maintenance_' + Date.now(),
+        created_at: new Date().toISOString()
+      };
+      
+      if (!supabase) {
+        localGeneratorMaintenance.push(maintenanceForLocal);
+        localStorage.setItem('local_generator_maintenance', JSON.stringify(localGeneratorMaintenance));
+        showToast('Maintenance groupe sauvegardée localement (Supabase indisponible)', 'warning');
+        
+        const generator = await getGeneratorById(maintenanceData.generator_id);
+        if (generator) {
+          addToHistory('generator_maintenance', 'Maintenance', `Maintenance pour groupe ${generator.immatriculation}`);
+        }
+        
+        return maintenanceForLocal;
+      }
+      
+      try {
+        const supabaseData = {
+          generator_id: maintenanceData.generator_id,
+          date: convertToStandardDate(maintenanceData.date),
+          type: maintenanceData.type,
+          cout: maintenanceData.cout,
+          description: maintenanceData.description || null
+        };
+        
+        const { data, error } = await supabase
+          .from('generator_maintenance')
+          .insert([supabaseData])
+          .select();
+        
+        if (error) throw error;
+        
+        showToast('Maintenance groupe enregistrée avec succès (Supabase)', 'success');
+        
+        maintenanceData.id = data[0].id;
+        localGeneratorMaintenance.push(maintenanceData);
+        localStorage.setItem('local_generator_maintenance', JSON.stringify(localGeneratorMaintenance));
+        
+        const generator = await getGeneratorById(maintenanceData.generator_id);
+        if (generator) {
+          addToHistory('generator_maintenance', 'Maintenance', `Maintenance pour groupe ${generator.immatriculation}`);
+        }
+        
+        return data[0];
+      } catch (error) {
+        console.error('Erreur Supabase, sauvegarde locale:', error);
+        
+        localGeneratorMaintenance.push(maintenanceForLocal);
+        localStorage.setItem('local_generator_maintenance', JSON.stringify(localGeneratorMaintenance));
+        
+        showToast('Maintenance groupe sauvegardée localement', 'warning');
+        
+        const generator = await getGeneratorById(maintenanceData.generator_id);
+        if (generator) {
+          addToHistory('generator_maintenance', 'Maintenance', `Maintenance pour groupe ${generator.immatriculation}`);
+        }
+        
+        return maintenanceForLocal;
+      }
+    }
+
+    async function getGeneratorMaintenance() {
+      if (!supabase) {
+        return localGeneratorMaintenance;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('generator_maintenance')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Erreur Supabase pour la maintenance groupe:', error);
+          return localGeneratorMaintenance;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return localGeneratorMaintenance;
+      }
     }
 
     // ============================================
@@ -1927,25 +2905,21 @@
       const tbody = document.getElementById('liste-vehicules');
       const countElement = document.getElementById('vehicule-count');
       
-      // Filtrer les véhicules
       const filteredVehicles = vehicles.filter(vehicle => 
         vehicle.immatriculation.toLowerCase().includes(searchTerm) ||
-        vehicle.marque.toLowerCase().includes(searchTerm) ||
-        vehicle.type.toLowerCase().includes(searchTerm)
+        (vehicle.marque && vehicle.marque.toLowerCase().includes(searchTerm)) ||
+        (vehicle.type && vehicle.type.toLowerCase().includes(searchTerm))
       );
       
-      // Pagination
       const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
       const startIndex = (currentVehiclePage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedVehicles = filteredVehicles.slice(startIndex, endIndex);
       
-      // Mettre à jour les informations de pagination
       document.getElementById('prev-page').disabled = currentVehiclePage <= 1;
       document.getElementById('next-page').disabled = currentVehiclePage >= totalPages;
-      document.getElementById('page-info').textContent = `Page ${currentVehiclePage} sur ${totalPages}`;
+      document.getElementById('page-info').textContent = `Page ${currentVehiclePage} sur ${totalPages > 0 ? totalPages : 1}`;
       
-      // Générer le HTML
       let html = '';
       
       if (paginatedVehicles.length === 0) {
@@ -1954,9 +2928,9 @@
         paginatedVehicles.forEach(vehicle => {
           html += `
             <tr>
-              <td>${vehicle.immatriculation}</td>
-              <td>${vehicle.marque}</td>
-              <td>${vehicle.type}</td>
+              <td>${vehicle.immatriculation || ''}</td>
+              <td>${vehicle.marque || ''}</td>
+              <td>${vehicle.type || ''}</td>
               <td>${formatStatut(vehicle.statut)}</td>
               <td><span class="localisation-status ${vehicle.localisation}">${formatLocalisation(vehicle.localisation)}</span></td>
               <td>
@@ -1978,11 +2952,9 @@
       tbody.innerHTML = html;
       countElement.textContent = `${filteredVehicles.length} véhicule(s)`;
       
-      // Mettre à jour les dropdowns
       populateVehicleDropdown();
     }
 
-    // Modifier un véhicule
     async function editVehicle(id) {
       const vehicle = await getVehicleById(id);
       if (!vehicle) return;
@@ -2002,33 +2974,29 @@
       document.getElementById('km_apres').value = vehicle.km_apres || '';
       document.getElementById('km_parcouru').value = vehicle.km_parcouru || '';
       
-      // Marquer comme édition
       editingVehicleId = id;
       document.getElementById('vehicule-form').dataset.editingId = id;
       document.getElementById('clear-form').textContent = 'Annuler édition';
       
-      // Faire défiler vers le formulaire
       document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Voir les détails d'un véhicule
     async function viewVehicleDetails(id) {
       const vehicle = await getVehicleById(id);
       if (!vehicle) return;
       
-      // Générer le HTML des détails
       let html = `
         <div class="detail-item">
           <span class="detail-label">Immatriculation:</span>
-          <span class="detail-value">${vehicle.immatriculation}</span>
+          <span class="detail-value">${vehicle.immatriculation || ''}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Marque/Modèle:</span>
-          <span class="detail-value">${vehicle.marque}</span>
+          <span class="detail-value">${vehicle.marque || ''}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Type:</span>
-          <span class="detail-value">${vehicle.type}</span>
+          <span class="detail-value">${vehicle.type || ''}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Date de mise en circulation:</span>
@@ -2074,11 +3042,10 @@
       }
       
       document.getElementById('vehicle-details').innerHTML = html;
-      document.getElementById('modal-title').textContent = `Détails - ${vehicle.immatriculation}`;
+      document.getElementById('modal-title').textContent = `Détails - ${vehicle.immatriculation || ''}`;
       document.getElementById('vehicle-modal').classList.add('show');
     }
 
-    // Vider le formulaire véhicule
     function clearVehicleForm() {
       document.getElementById('vehicule-form').reset();
       editingVehicleId = null;
@@ -2087,7 +3054,6 @@
       document.getElementById('km_parcouru').value = '';
     }
 
-    // Remplir les dropdowns des véhicules
     async function populateVehicleDropdown() {
       const vehicles = await getVehicles();
       const carburantDropdown = document.getElementById('carburant_vehicule');
@@ -2106,135 +3072,30 @@
     }
 
     // ============================================
-    // GESTION DES FORMULAIRES VÉHICULES
+    // AFFICHAGE DES MOTOS
     // ============================================
     
-    // Formulaire véhicule
-    document.getElementById('vehicule-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const vehicleData = {
-        immatriculation: document.getElementById('immatriculation').value,
-        marque: document.getElementById('marque').value,
-        type: document.getElementById('type').value,
-        date_circulation: document.getElementById('date_circulation').value,
-        statut: document.getElementById('statut').value,
-        localisation: document.getElementById('localisation').value,
-        chauffeur: document.getElementById('chauffeur').value,
-        observations: document.getElementById('observations').value,
-        departement: document.getElementById('departement').value,
-        destination: document.getElementById('destination').value,
-        motif_deplacement: document.getElementById('motif_deplacement').value,
-        km_avant: parseInt(document.getElementById('km_avant').value) || 0,
-        km_apres: parseInt(document.getElementById('km_apres').value) || 0,
-        km_parcouru: parseInt(document.getElementById('km_parcouru').value) || 0
-      };
-      
-      if (editingVehicleId) {
-        vehicleData.id = editingVehicleId;
-        await updateVehicle(editingVehicleId, vehicleData);
-      } else {
-        await addVehicle(vehicleData);
-      }
-    });
-
-    // ============================================
-    // FONCTIONS SIMILAIRES POUR LES MOTOS ET GROUPES
-    // ============================================
-    
-    // (Les fonctions pour les motos et groupes seraient similaires aux fonctions véhicules)
-    // Pour simplifier, je vais montrer le pattern pour une seule table supplémentaire
-
-    async function getBikes() {
-      try {
-        const { data, error } = await supabase
-          .from('motos')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('Erreur Supabase pour les motos:', error);
-          return localBikes;
-        }
-        
-        return data || [];
-      } catch (error) {
-        console.error('Erreur de connexion:', error);
-        return localBikes;
-      }
-    }
-
-    async function addBike(bikeData) {
-      try {
-        const supabaseData = {
-          immatriculation: bikeData.immatriculation,
-          marque: bikeData.marque,
-          type: bikeData.type,
-          date_circulation: convertToStandardDate(bikeData.date_circulation),
-          statut: bikeData.statut,
-          localisation: bikeData.localisation,
-          chauffeur: bikeData.chauffeur || null,
-          observations: bikeData.observations || null
-        };
-        
-        const { data, error } = await supabase
-          .from('motos')
-          .insert([supabaseData])
-          .select();
-        
-        if (error) throw error;
-        
-        showToast('Moto ajoutée avec succès (Supabase)', 'success');
-        
-        // Local fallback
-        bikeData.id = data[0].id;
-        localBikes.push(bikeData);
-        localStorage.setItem('local_bikes', JSON.stringify(localBikes));
-        
-        renderBikesList();
-        clearBikeForm();
-        
-        return data[0];
-      } catch (error) {
-        console.error('Erreur Supabase, sauvegarde locale:', error);
-        
-        bikeData.id = 'local_' + Date.now();
-        localBikes.push(bikeData);
-        localStorage.setItem('local_bikes', JSON.stringify(localBikes));
-        
-        showToast('Moto sauvegardée localement', 'warning');
-        renderBikesList();
-        clearBikeForm();
-        
-        return bikeData;
-      }
-    }
-
     async function renderBikesList() {
       const bikes = await getBikes();
       const searchTerm = document.getElementById('search-bike').value.toLowerCase();
       const tbody = document.getElementById('liste-bikes');
       const countElement = document.getElementById('bike-count');
       
-      // Filtrer les motos
       const filteredBikes = bikes.filter(bike => 
         bike.immatriculation.toLowerCase().includes(searchTerm) ||
-        bike.marque.toLowerCase().includes(searchTerm) ||
-        bike.type.toLowerCase().includes(searchTerm)
+        (bike.marque && bike.marque.toLowerCase().includes(searchTerm)) ||
+        (bike.type && bike.type.toLowerCase().includes(searchTerm))
       );
       
-      // Pagination
       const totalPages = Math.ceil(filteredBikes.length / itemsPerPage);
       const startIndex = (currentBikePage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedBikes = filteredBikes.slice(startIndex, endIndex);
       
-      // Mettre à jour les informations de pagination
       document.getElementById('prev-bike-page').disabled = currentBikePage <= 1;
       document.getElementById('next-bike-page').disabled = currentBikePage >= totalPages;
-      document.getElementById('bike-page-info').textContent = `Page ${currentBikePage} sur ${totalPages}`;
+      document.getElementById('bike-page-info').textContent = `Page ${currentBikePage} sur ${totalPages > 0 ? totalPages : 1}`;
       
-      // Générer le HTML
       let html = '';
       
       if (paginatedBikes.length === 0) {
@@ -2243,9 +3104,9 @@
         paginatedBikes.forEach(bike => {
           html += `
             <tr>
-              <td>${bike.immatriculation}</td>
-              <td>${bike.marque}</td>
-              <td>${bike.type}</td>
+              <td>${bike.immatriculation || ''}</td>
+              <td>${bike.marque || ''}</td>
+              <td>${bike.type || ''}</td>
               <td>${formatStatut(bike.statut)}</td>
               <td><span class="localisation-status ${bike.localisation}">${formatLocalisation(bike.localisation)}</span></td>
               <td>
@@ -2267,38 +3128,260 @@
       tbody.innerHTML = html;
       countElement.textContent = `${filteredBikes.length} moto(s)`;
       
-      // Mettre à jour les dropdowns
       populateBikeDropdown();
     }
 
-    // Formulaire moto
-    document.getElementById('bike-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function editBike(id) {
+      const bike = await getBikeById(id);
+      if (!bike) return;
       
-      const bikeData = {
-        immatriculation: document.getElementById('bike_immatriculation').value,
-        marque: document.getElementById('bike_marque').value,
-        type: document.getElementById('bike_type').value,
-        date_circulation: document.getElementById('bike_date_circulation').value,
-        statut: document.getElementById('bike_statut').value,
-        localisation: document.getElementById('bike_localisation').value,
-        chauffeur: document.getElementById('bike_chauffeur').value,
-        observations: document.getElementById('bike_observations').value
-      };
+      document.getElementById('bike_immatriculation').value = bike.immatriculation || '';
+      document.getElementById('bike_marque').value = bike.marque || '';
+      document.getElementById('bike_type').value = bike.type || '';
+      document.getElementById('bike_date_circulation').value = bike.date_circulation || '';
+      document.getElementById('bike_statut').value = bike.statut || 'en service';
+      document.getElementById('bike_localisation').value = bike.localisation || 'en_circulation';
+      document.getElementById('bike_chauffeur').value = bike.chauffeur || '';
+      document.getElementById('bike_observations').value = bike.observations || '';
       
-      if (editingBikeId) {
-        bikeData.id = editingBikeId;
-        // Implémenter updateBike similaire à updateVehicle
-      } else {
-        await addBike(bikeData);
+      editingBikeId = id;
+      document.getElementById('bike-form').dataset.editingId = id;
+      document.getElementById('clear-bike-form').textContent = 'Annuler édition';
+      
+      document.getElementById('bike-form-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function viewBikeDetails(id) {
+      const bike = await getBikeById(id);
+      if (!bike) return;
+      
+      let html = `
+        <div class="detail-item">
+          <span class="detail-label">Immatriculation:</span>
+          <span class="detail-value">${bike.immatriculation || ''}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Marque/Modèle:</span>
+          <span class="detail-value">${bike.marque || ''}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Type:</span>
+          <span class="detail-value">${bike.type || ''}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Date de mise en circulation:</span>
+          <span class="detail-value">${formatDate(bike.date_circulation)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Statut:</span>
+          <span class="detail-value">${formatStatut(bike.statut)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Localisation:</span>
+          <span class="detail-value">${formatLocalisation(bike.localisation)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Facteur assigné:</span>
+          <span class="detail-value">${bike.chauffeur || 'Non assigné'}</span>
+        </div>
+      `;
+      
+      if (bike.observations) {
+        html += `
+          <div class="detail-item">
+            <span class="detail-label">Observations:</span>
+            <span class="detail-value">${bike.observations}</span>
+          </div>
+        `;
       }
-    });
+      
+      document.getElementById('bike-details').innerHTML = html;
+      document.getElementById('bike-modal-title').textContent = `Détails - ${bike.immatriculation || ''}`;
+      document.getElementById('bike-modal').classList.add('show');
+    }
+
+    function clearBikeForm() {
+      document.getElementById('bike-form').reset();
+      editingBikeId = null;
+      delete document.getElementById('bike-form').dataset.editingId;
+      document.getElementById('clear-bike-form').textContent = 'Nouveau';
+    }
+
+    async function populateBikeDropdown() {
+      const bikes = await getBikes();
+      const carburantDropdown = document.getElementById('bike_carburant_moto');
+      const maintenanceDropdown = document.getElementById('maintenance_bike');
+      
+      let carburantOptions = '<option value="">Sélectionner une moto...</option>';
+      let maintenanceOptions = '<option value="">Sélectionner une moto...</option>';
+      
+      bikes.forEach(bike => {
+        carburantOptions += `<option value="${bike.id}">${bike.immatriculation} - ${bike.marque}</option>`;
+        maintenanceOptions += `<option value="${bike.id}">${bike.immatriculation} - ${bike.marque}</option>`;
+      });
+      
+      carburantDropdown.innerHTML = carburantOptions;
+      maintenanceDropdown.innerHTML = maintenanceOptions;
+    }
+
+    // ============================================
+    // AFFICHAGE DES GROUPES ÉLECTROGÈNES
+    // ============================================
+    
+    async function renderGeneratorsList() {
+      const generators = await getGenerators();
+      const searchTerm = document.getElementById('search-generator').value.toLowerCase();
+      const tbody = document.getElementById('liste-generators');
+      const countElement = document.getElementById('generator-count');
+      
+      const filteredGenerators = generators.filter(generator => 
+        generator.immatriculation.toLowerCase().includes(searchTerm) ||
+        (generator.marque && generator.marque.toLowerCase().includes(searchTerm)) ||
+        (generator.type && generator.type.toLowerCase().includes(searchTerm))
+      );
+      
+      const totalPages = Math.ceil(filteredGenerators.length / itemsPerPage);
+      const startIndex = (currentGeneratorPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedGenerators = filteredGenerators.slice(startIndex, endIndex);
+      
+      document.getElementById('prev-generator-page').disabled = currentGeneratorPage <= 1;
+      document.getElementById('next-generator-page').disabled = currentGeneratorPage >= totalPages;
+      document.getElementById('generator-page-info').textContent = `Page ${currentGeneratorPage} sur ${totalPages > 0 ? totalPages : 1}`;
+      
+      let html = '';
+      
+      if (paginatedGenerators.length === 0) {
+        html = `<tr><td colspan="7" class="text-center">Aucun groupe électrogène trouvé</td></tr>`;
+      } else {
+        paginatedGenerators.forEach(generator => {
+          html += `
+            <tr>
+              <td>${generator.immatriculation || ''}</td>
+              <td>${generator.marque || ''}</td>
+              <td>${generator.puissance || ''} kVA</td>
+              <td>${generator.type || ''}</td>
+              <td>${formatStatut(generator.statut)}</td>
+              <td><span class="localisation-status ${generator.localisation}">${formatLocalisation(generator.localisation)}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline" onclick="editGenerator('${generator.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="viewGeneratorDetails('${generator.id}')">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline" onclick="deleteGenerator('${generator.id}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      
+      tbody.innerHTML = html;
+      countElement.textContent = `${filteredGenerators.length} groupe(s)`;
+      
+      populateGeneratorDropdown();
+    }
+
+    async function editGenerator(id) {
+      const generator = await getGeneratorById(id);
+      if (!generator) return;
+      
+      document.getElementById('generator_immatriculation').value = generator.immatriculation || '';
+      document.getElementById('generator_marque').value = generator.marque || '';
+      document.getElementById('generator_type').value = generator.type || '';
+      document.getElementById('generator_puissance').value = generator.puissance || '';
+      document.getElementById('generator_date_mise_service').value = generator.date_mise_service || '';
+      document.getElementById('generator_statut').value = generator.statut || 'en service';
+      document.getElementById('generator_localisation').value = generator.localisation || 'fixe';
+      document.getElementById('generator_observations').value = generator.observations || '';
+      
+      editingGeneratorId = id;
+      document.getElementById('generator-form').dataset.editingId = id;
+      document.getElementById('clear-generator-form').textContent = 'Annuler édition';
+      
+      document.getElementById('generator-form-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function viewGeneratorDetails(id) {
+      const generator = await getGeneratorById(id);
+      if (!generator) return;
+      
+      let html = `
+        <div class="detail-item">
+          <span class="detail-label">Numéro d'inventaire:</span>
+          <span class="detail-value">${generator.immatriculation || ''}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Marque/Modèle:</span>
+          <span class="detail-value">${generator.marque || ''}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Type:</span>
+          <span class="detail-value">${generator.type || ''}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Puissance:</span>
+          <span class="detail-value">${generator.puissance || ''} kVA</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Date de mise en service:</span>
+          <span class="detail-value">${formatDate(generator.date_mise_service)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Statut:</span>
+          <span class="detail-value">${formatStatut(generator.statut)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Localisation:</span>
+          <span class="detail-value">${formatLocalisation(generator.localisation)}</span>
+        </div>
+      `;
+      
+      if (generator.observations) {
+        html += `
+          <div class="detail-item">
+            <span class="detail-label">Observations:</span>
+            <span class="detail-value">${generator.observations}</span>
+          </div>
+        `;
+      }
+      
+      document.getElementById('generator-details').innerHTML = html;
+      document.getElementById('generator-modal-title').textContent = `Détails - ${generator.immatriculation || ''}`;
+      document.getElementById('generator-modal').classList.add('show');
+    }
+
+    function clearGeneratorForm() {
+      document.getElementById('generator-form').reset();
+      editingGeneratorId = null;
+      delete document.getElementById('generator-form').dataset.editingId;
+      document.getElementById('clear-generator-form').textContent = 'Nouveau';
+    }
+
+    async function populateGeneratorDropdown() {
+      const generators = await getGenerators();
+      const carburantDropdown = document.getElementById('generator_carburant_groupe');
+      const maintenanceDropdown = document.getElementById('generator_maintenance_groupe');
+      
+      let carburantOptions = '<option value="">Sélectionner un groupe...</option>';
+      let maintenanceOptions = '<option value="">Sélectionner un groupe...</option>';
+      
+      generators.forEach(generator => {
+        carburantOptions += `<option value="${generator.id}">${generator.immatriculation} - ${generator.marque}</option>`;
+        maintenanceOptions += `<option value="${generator.id}">${generator.immatriculation} - ${generator.marque}</option>`;
+      });
+      
+      carburantDropdown.innerHTML = carburantOptions;
+      maintenanceDropdown.innerHTML = maintenanceOptions;
+    }
 
     // ============================================
     // GESTION DE L'HISTORIQUE
     // ============================================
     
-    // Ajouter une entrée à l'historique
     function addToHistory(type, action, description) {
       const history = JSON.parse(localStorage.getItem('fleet_history') || '[]');
       const entry = {
@@ -2310,13 +3393,12 @@
       };
       
       history.unshift(entry);
-      if (history.length > 50) history.pop(); // Garder seulement les 50 dernières entrées
+      if (history.length > 50) history.pop();
       
       localStorage.setItem('fleet_history', JSON.stringify(history));
       renderHistory();
     }
 
-    // Afficher l'historique
     function renderHistory() {
       const history = JSON.parse(localStorage.getItem('fleet_history') || '[]');
       const filterType = document.getElementById('filter-type').value;
@@ -2403,6 +3485,54 @@
         carburantPrix.addEventListener('input', calculateCarburantCout);
       }
       
+      // Calcul kilométrage pour les motos
+      const bikeCarburantKmDepart = document.getElementById('bike_carburant_km_depart');
+      const bikeCarburantKmArrivee = document.getElementById('bike_carburant_km_arrivee');
+      const bikeCarburantKmParcouru = document.getElementById('bike_carburant_km_parcouru');
+      
+      function calculateBikeCarburantKMParcouru() {
+        const depart = parseInt(bikeCarburantKmDepart.value) || 0;
+        const arrivee = parseInt(bikeCarburantKmArrivee.value) || 0;
+        bikeCarburantKmParcouru.value = Math.max(0, arrivee - depart);
+      }
+      
+      if (bikeCarburantKmDepart && bikeCarburantKmArrivee && bikeCarburantKmParcouru) {
+        bikeCarburantKmDepart.addEventListener('input', calculateBikeCarburantKMParcouru);
+        bikeCarburantKmArrivee.addEventListener('input', calculateBikeCarburantKMParcouru);
+      }
+      
+      // Calcul coût total pour le carburant des motos
+      const bikeCarburantLitres = document.getElementById('bike_carburant_litres');
+      const bikeCarburantPrix = document.getElementById('bike_carburant_prix_unitaire');
+      const bikeCarburantCout = document.getElementById('bike_carburant_cout');
+      
+      function calculateBikeCarburantCout() {
+        const litres = parseFloat(bikeCarburantLitres.value) || 0;
+        const prix = parseFloat(bikeCarburantPrix.value) || 0;
+        bikeCarburantCout.value = (litres * prix).toFixed(2);
+      }
+      
+      if (bikeCarburantLitres && bikeCarburantPrix && bikeCarburantCout) {
+        bikeCarburantLitres.addEventListener('input', calculateBikeCarburantCout);
+        bikeCarburantPrix.addEventListener('input', calculateBikeCarburantCout);
+      }
+      
+      // Calcul coût total pour le carburant des groupes
+      const generatorCarburantQuantite = document.getElementById('generator_carburant_quantite_ravitailler');
+      const generatorCarburantPrix = document.getElementById('generator_carburant_prix_unitaire');
+      const generatorCarburantCout = document.getElementById('generator_carburant_cout');
+      
+      function calculateGeneratorCarburantCout() {
+        const quantite = parseFloat(generatorCarburantQuantite.value) || 0;
+        const prix = parseFloat(generatorCarburantPrix.value) || 0;
+        generatorCarburantCout.value = (quantite * prix).toFixed(2);
+      }
+      
+      if (generatorCarburantQuantite && generatorCarburantPrix && generatorCarburantCout) {
+        generatorCarburantQuantite.addEventListener('input', calculateGeneratorCarburantCout);
+        generatorCarburantPrix.addEventListener('input', calculateGeneratorCarburantCout);
+      }
+      
       // Calcul temps de fonctionnement pour les groupes électrogènes
       const heureMarche = document.getElementById('generator_carburant_heure_marche');
       const heureArret = document.getElementById('generator_carburant_heure_arret');
@@ -2415,7 +3545,6 @@
           
           let totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
           
-          // Gérer le cas où l'heure d'arrêt est le lendemain
           if (totalMinutes < 0) {
             totalMinutes += 24 * 60;
           }
@@ -2437,10 +3566,11 @@
     // GESTION DES ÉVÉNEMENTS
     // ============================================
     
-    // Initialisation de l'application
     function initApp() {
+      console.log("Initialisation de l'application...");
+      
       // Restaurer le thème
-      const savedTheme = localStorage.getItem('fleet_theme');
+      const savedTheme = localStorage.getItem('fleet_theme') || '';
       if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         const themeButton = document.getElementById('toggle-theme');
@@ -2468,14 +3598,22 @@
         localStorage.setItem('fleet_theme', newTheme);
       });
       
-      // Bouton nouveau véhicule
+      // Boutons formulaire véhicule
       document.getElementById('clear-form').addEventListener('click', clearVehicleForm);
-      
-      // Bouton annuler édition
       document.getElementById('cancel-edit').addEventListener('click', clearVehicleForm);
       
-      // Recherche véhicules
+      // Boutons formulaire moto
+      document.getElementById('clear-bike-form').addEventListener('click', clearBikeForm);
+      document.getElementById('cancel-bike-edit').addEventListener('click', clearBikeForm);
+      
+      // Boutons formulaire groupe
+      document.getElementById('clear-generator-form').addEventListener('click', clearGeneratorForm);
+      document.getElementById('cancel-generator-edit').addEventListener('click', clearGeneratorForm);
+      
+      // Recherche
       document.getElementById('search-vehicule').addEventListener('input', renderVehiclesList);
+      document.getElementById('search-bike').addEventListener('input', renderBikesList);
+      document.getElementById('search-generator').addEventListener('input', renderGeneratorsList);
       
       // Pagination véhicules
       document.getElementById('prev-page').addEventListener('click', () => {
@@ -2490,15 +3628,115 @@
         renderVehiclesList();
       });
       
+      // Pagination motos
+      document.getElementById('prev-bike-page').addEventListener('click', () => {
+        if (currentBikePage > 1) {
+          currentBikePage--;
+          renderBikesList();
+        }
+      });
+      
+      document.getElementById('next-bike-page').addEventListener('click', () => {
+        currentBikePage++;
+        renderBikesList();
+      });
+      
+      // Pagination groupes
+      document.getElementById('prev-generator-page').addEventListener('click', () => {
+        if (currentGeneratorPage > 1) {
+          currentGeneratorPage--;
+          renderGeneratorsList();
+        }
+      });
+      
+      document.getElementById('next-generator-page').addEventListener('click', () => {
+        currentGeneratorPage++;
+        renderGeneratorsList();
+      });
+      
       // Filtre historique
       document.getElementById('filter-type').addEventListener('change', renderHistory);
       
-      // Formulaire carburant véhicule (version locale pour l'instant)
+      // Formulaire véhicule
+      document.getElementById('vehicule-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const vehicleData = {
+          immatriculation: document.getElementById('immatriculation').value,
+          marque: document.getElementById('marque').value,
+          type: document.getElementById('type').value,
+          date_circulation: document.getElementById('date_circulation').value,
+          statut: document.getElementById('statut').value,
+          localisation: document.getElementById('localisation').value,
+          chauffeur: document.getElementById('chauffeur').value,
+          observations: document.getElementById('observations').value,
+          departement: document.getElementById('departement').value,
+          destination: document.getElementById('destination').value,
+          motif_deplacement: document.getElementById('motif_deplacement').value,
+          km_avant: parseInt(document.getElementById('km_avant').value) || 0,
+          km_apres: parseInt(document.getElementById('km_apres').value) || 0,
+          km_parcouru: parseInt(document.getElementById('km_parcouru').value) || 0
+        };
+        
+        if (editingVehicleId) {
+          vehicleData.id = editingVehicleId;
+          await updateVehicle(editingVehicleId, vehicleData);
+        } else {
+          await addVehicle(vehicleData);
+        }
+      });
+      
+      // Formulaire moto
+      document.getElementById('bike-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const bikeData = {
+          immatriculation: document.getElementById('bike_immatriculation').value,
+          marque: document.getElementById('bike_marque').value,
+          type: document.getElementById('bike_type').value,
+          date_circulation: document.getElementById('bike_date_circulation').value,
+          statut: document.getElementById('bike_statut').value,
+          localisation: document.getElementById('bike_localisation').value,
+          chauffeur: document.getElementById('bike_chauffeur').value,
+          observations: document.getElementById('bike_observations').value
+        };
+        
+        if (editingBikeId) {
+          bikeData.id = editingBikeId;
+          await updateBike(editingBikeId, bikeData);
+        } else {
+          await addBike(bikeData);
+        }
+      });
+      
+      // Formulaire groupe électrogène
+      document.getElementById('generator-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const generatorData = {
+          immatriculation: document.getElementById('generator_immatriculation').value,
+          marque: document.getElementById('generator_marque').value,
+          type: document.getElementById('generator_type').value,
+          puissance: parseInt(document.getElementById('generator_puissance').value) || 0,
+          date_mise_service: document.getElementById('generator_date_mise_service').value,
+          statut: document.getElementById('generator_statut').value,
+          localisation: document.getElementById('generator_localisation').value,
+          observations: document.getElementById('generator_observations').value
+        };
+        
+        if (editingGeneratorId) {
+          generatorData.id = editingGeneratorId;
+          await updateGenerator(editingGeneratorId, generatorData);
+        } else {
+          await addGenerator(generatorData);
+        }
+      });
+      
+      // Formulaire carburant véhicule
       document.getElementById('carburant-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const carburantData = {
-          id: 'local_fuel_' + Date.now(),
           vehicle_id: document.getElementById('carburant_vehicule').value,
           date: document.getElementById('carburant_date').value,
           km_depart: parseInt(document.getElementById('carburant_km_depart').value) || 0,
@@ -2511,20 +3749,185 @@
           cout: parseFloat(document.getElementById('carburant_cout').value) || 0
         };
         
-        // Sauvegarder localement
-        localFuelRecords.push(carburantData);
-        localStorage.setItem('local_fuel', JSON.stringify(localFuelRecords));
+        await addVehicleFuel(carburantData);
         
-        showToast('Ravitaillement enregistré localement', 'success');
         document.getElementById('carburant-form').reset();
         document.getElementById('carburant_km_parcouru').value = '';
         document.getElementById('carburant_cout').value = '';
+      });
+      
+      // Formulaire carburant moto
+      document.getElementById('bike-carburant-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        // Récupérer les informations du véhicule pour l'historique
-        const vehicle = await getVehicleById(carburantData.vehicle_id);
-        if (vehicle) {
-          addToHistory('fuel', 'Ravitaillement', `Carburant ajouté pour ${vehicle.immatriculation}`);
-        }
+        const carburantData = {
+          bike_id: document.getElementById('bike_carburant_moto').value,
+          date: document.getElementById('bike_carburant_date').value,
+          km_depart: parseInt(document.getElementById('bike_carburant_km_depart').value) || 0,
+          km_arrivee: parseInt(document.getElementById('bike_carburant_km_arrivee').value) || 0,
+          km_parcouru: parseInt(document.getElementById('bike_carburant_km_parcouru').value) || 0,
+          litres: parseFloat(document.getElementById('bike_carburant_litres').value) || 0,
+          consommation_100km: parseFloat(document.getElementById('bike_carburant_consommation_100km').value) || 0,
+          prix_unitaire: parseFloat(document.getElementById('bike_carburant_prix_unitaire').value) || 0,
+          type: document.getElementById('bike_carburant_type').value,
+          cout: parseFloat(document.getElementById('bike_carburant_cout').value) || 0
+        };
+        
+        await addBikeFuel(carburantData);
+        
+        document.getElementById('bike-carburant-form').reset();
+        document.getElementById('bike_carburant_km_parcouru').value = '';
+        document.getElementById('bike_carburant_cout').value = '';
+      });
+      
+      // Formulaire carburant groupe
+      document.getElementById('generator-carburant-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const carburantData = {
+          generator_id: document.getElementById('generator_carburant_groupe').value,
+          date: document.getElementById('generator_carburant_date').value,
+          quantite_ravitailler: parseFloat(document.getElementById('generator_carburant_quantite_ravitailler').value) || 0,
+          heure_marche: document.getElementById('generator_carburant_heure_marche').value,
+          heure_arret: document.getElementById('generator_carburant_heure_arret').value,
+          temps_fonctionnement: document.getElementById('generator_carburant_temps_fonctionnement').value,
+          quantite_consommee_heure: parseFloat(document.getElementById('generator_carburant_quantite_consommee_heure').value) || 0,
+          prix_unitaire: parseFloat(document.getElementById('generator_carburant_prix_unitaire').value) || 0,
+          cout: parseFloat(document.getElementById('generator_carburant_cout').value) || 0
+        };
+        
+        await addGeneratorFuel(carburantData);
+        
+        document.getElementById('generator-carburant-form').reset();
+        document.getElementById('generator_carburant_temps_fonctionnement').value = '';
+        document.getElementById('generator_carburant_cout').value = '';
+      });
+      
+      // Formulaire maintenance véhicule
+      document.getElementById('vehicle-maintenance-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const maintenanceData = {
+          vehicle_id: document.getElementById('vehicle_maintenance_vehicule').value,
+          date: document.getElementById('vehicle_maintenance_date').value,
+          type: document.getElementById('vehicle_maintenance_type').value,
+          cout: parseFloat(document.getElementById('vehicle_maintenance_cout').value) || 0,
+          description: document.getElementById('vehicle_maintenance_description').value
+        };
+        
+        await addVehicleMaintenance(maintenanceData);
+        
+        document.getElementById('vehicle-maintenance-form').reset();
+      });
+      
+      // Formulaire maintenance moto
+      document.getElementById('bike-maintenance-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const maintenanceData = {
+          bike_id: document.getElementById('maintenance_bike').value,
+          date: document.getElementById('maintenance_date').value,
+          type: document.getElementById('maintenance_type').value,
+          cout: parseFloat(document.getElementById('maintenance_cout').value) || 0,
+          description: document.getElementById('maintenance_description').value
+        };
+        
+        await addBikeMaintenance(maintenanceData);
+        
+        document.getElementById('bike-maintenance-form').reset();
+      });
+      
+      // Formulaire maintenance groupe
+      document.getElementById('generator-maintenance-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const maintenanceData = {
+          generator_id: document.getElementById('generator_maintenance_groupe').value,
+          date: document.getElementById('generator_maintenance_date').value,
+          type: document.getElementById('generator_maintenance_type').value,
+          cout: parseFloat(document.getElementById('generator_maintenance_cout').value) || 0,
+          description: document.getElementById('generator_maintenance_description').value
+        };
+        
+        await addGeneratorMaintenance(maintenanceData);
+        
+        document.getElementById('generator-maintenance-form').reset();
+      });
+      
+      // Fermeture des modales
+      document.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', function() {
+          this.closest('.modal').classList.remove('show');
+        });
+      });
+      
+      // Fermeture des modales en cliquant à l'extérieur
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('show');
+          }
+        });
+      });
+      
+      // Export Excel
+      document.getElementById('export-excel').addEventListener('click', async () => {
+        const vehicles = await getVehicles();
+        const bikes = await getBikes();
+        const generators = await getGenerators();
+        
+        const wb = XLSX.utils.book_new();
+        
+        // Feuille Véhicules
+        const vehicleData = vehicles.map(v => ({
+          'Immatriculation': v.immatriculation,
+          'Marque/Modèle': v.marque,
+          'Type': v.type,
+          'Date circulation': v.date_circulation,
+          'Statut': v.statut,
+          'Localisation': v.localisation,
+          'Chauffeur': v.chauffeur,
+          'Département': v.departement,
+          'Destination': v.destination,
+          'Motif déplacement': v.motif_deplacement,
+          'Km avant': v.km_avant,
+          'Km après': v.km_apres,
+          'Km parcouru': v.km_parcouru,
+          'Observations': v.observations
+        }));
+        const ws1 = XLSX.utils.json_to_sheet(vehicleData);
+        XLSX.utils.book_append_sheet(wb, ws1, 'Véhicules');
+        
+        // Feuille Motos
+        const bikeData = bikes.map(b => ({
+          'Immatriculation': b.immatriculation,
+          'Marque/Modèle': b.marque,
+          'Type': b.type,
+          'Date circulation': b.date_circulation,
+          'Statut': b.statut,
+          'Localisation': b.localisation,
+          'Chauffeur': b.chauffeur,
+          'Observations': b.observations
+        }));
+        const ws2 = XLSX.utils.json_to_sheet(bikeData);
+        XLSX.utils.book_append_sheet(wb, ws2, 'Motos');
+        
+        // Feuille Groupes
+        const generatorData = generators.map(g => ({
+          'N° Inventaire': g.immatriculation,
+          'Marque/Modèle': g.marque,
+          'Puissance (kVA)': g.puissance,
+          'Type': g.type,
+          'Date mise service': g.date_mise_service,
+          'Statut': g.statut,
+          'Localisation': g.localisation,
+          'Observations': g.observations
+        }));
+        const ws3 = XLSX.utils.json_to_sheet(generatorData);
+        XLSX.utils.book_append_sheet(wb, ws3, 'Groupes Électrogènes');
+        
+        XLSX.writeFile(wb, `gestion_flotte_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast('Export Excel généré avec succès', 'success');
       });
       
       // Initialiser les calculs automatiques
@@ -2533,14 +3936,22 @@
       // Rendre les listes initiales
       renderVehiclesList();
       renderBikesList();
+      renderGeneratorsList();
       renderHistory();
       
       // Test de connexion Supabase
       testSupabaseConnection();
+      
+      console.log("Application initialisée avec succès");
     }
 
-    // Fonction de test de connexion
     async function testSupabaseConnection() {
+      if (!supabase) {
+        console.log("Supabase non initialisé, mode local uniquement");
+        showToast('Mode local activé (Supabase non disponible)', 'warning');
+        return;
+      }
+      
       try {
         const { data, error } = await supabase
           .from('vehicles')
@@ -2548,19 +3959,24 @@
           .limit(1);
         
         if (error) {
-          console.log('Supabase: Table vehicles non disponible, utilisation du mode local');
-          showToast('Mode local activé (Supabase non disponible)', 'warning');
+          console.log('Supabase: Erreur de connexion', error);
+          showToast('Mode local activé (Supabase erreur)', 'warning');
         } else {
           console.log('Supabase: Connexion réussie');
           showToast('Connecté à Supabase', 'success');
         }
       } catch (error) {
-        console.log('Supabase: Erreur de connexion');
+        console.log('Supabase: Erreur de connexion', error);
+        showToast('Mode local activé', 'warning');
       }
     }
 
     // Démarrer l'application quand le DOM est chargé
-    document.addEventListener('DOMContentLoaded', initApp);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
   </script>
 </body>
 </html>
